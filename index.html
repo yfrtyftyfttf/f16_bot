@@ -95,11 +95,21 @@
     </div>
 
     <div class="section">
-        <select id="platform"><option>تيك توك</option><option>انستا</option><option>تليجرام</option></select>
+        <select id="platform">
+            <option>تيك توك</option>
+            <option>انستا</option>
+            <option>تليجرام</option>
+            <option disabled>فيسبوك (عن قريب)</option>
+            <option disabled>يوتيوب (عن قريب)</option>
+            <option disabled>كواي - Kwai (عن قريب)</option>
+            <option disabled>تويتر - X (عن قريب)</option>
+            <option disabled>سناب شات (عن قريب)</option>
+        </select>
         <select id="serviceType" onchange="calcPrice()">
             <option value="متابعين">متابعين ($2.00 / 1000)</option>
             <option value="لايكات">لايكات ($1.00 / 1000)</option>
             <option value="مشاهدات">مشاهدات ($0.10 / 1000)</option>
+            <option value="مجاني">🎁 1000 مشاهدة تيك توك (مجاناً)</option>
         </select>
         <input type="url" id="orderLink" placeholder="رابط الحساب">
         <input type="number" id="orderQty" placeholder="الكمية" oninput="calcPrice()">
@@ -147,6 +157,7 @@
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth(), db = firebase.firestore();
     let currentUserBalance = 0;
+    let usedFreeService = false;
 
     function toggleAuth(s) {
         document.getElementById('signupBox').style.display = s ? 'block' : 'none';
@@ -157,7 +168,7 @@
         const name = document.getElementById('newName').value, email = document.getElementById('newEmail').value, pass = document.getElementById('newPass').value;
         try {
             const res = await auth.createUserWithEmailAndPassword(email, pass);
-            await db.collection("users").doc(res.user.uid).set({ name, balance: 0.0, lastBonus: 0, usedPromo: false, t1: false });
+            await db.collection("users").doc(res.user.uid).set({ name, balance: 0.0, lastBonus: 0, usedPromo: false, t1: false, usedFree: false });
         } catch (e) { alert(e.message); }
     }
 
@@ -175,6 +186,7 @@
                 if (doc.exists) {
                     const data = doc.data();
                     currentUserBalance = data.balance;
+                    usedFreeService = data.usedFree || false;
                     document.getElementById('uNameDisplay').innerText = data.name;
                     document.getElementById('uBalanceDisplay').innerText = "$" + currentUserBalance.toFixed(2);
                     checkBonusAvailability(data.lastBonus);
@@ -220,11 +232,37 @@
     }
 
     async function sendOrderRequest() {
-        const qty = document.getElementById('orderQty').value, link = document.getElementById('orderLink').value, price = parseFloat(document.getElementById('totalPrice').innerText);
-        if(!qty || !link || currentUserBalance < price) return alert("تحقق من البيانات والرصيد!");
-        await db.collection("users").doc(auth.currentUser.uid).update({ balance: firebase.firestore.FieldValue.increment(-price) });
-        await db.collection("services_orders").add({ uid: auth.currentUser.uid, name: document.getElementById('uNameDisplay').innerText, service: document.getElementById('serviceType').value, qty, link, status: "pending", date: new Date() });
-        alert("✅ تم الطلب!");
+        const platform = document.getElementById('platform').value;
+        const service = document.getElementById('serviceType').value;
+        const qty = parseInt(document.getElementById('orderQty').value);
+        const link = document.getElementById('orderLink').value;
+        const price = parseFloat(document.getElementById('totalPrice').innerText);
+
+        if(platform.includes("عن قريب")) return alert("هذه الخدمة ستتوفر قريباً!");
+        if(!qty || !link) return alert("يرجى ملء كافة البيانات!");
+
+        // فحص الخدمة المجانية
+        if(service === "مجاني") {
+            if(usedFreeService) return alert("لقد استخدمت الخدمة المجانية مسبقاً لهذا الحساب!");
+            if(qty > 1000) return alert("الحد الأقصى للخدمة المجانية هو 1000 مشاهدة!");
+            if(platform !== "تيك توك") return alert("الخدمة المجانية متوفرة للتيك توك فقط!");
+            
+            await db.collection("users").doc(auth.currentUser.uid).update({ usedFree: true });
+        } else {
+            if(currentUserBalance < price) return alert("رصيدك غير كافٍ!");
+            await db.collection("users").doc(auth.currentUser.uid).update({ balance: firebase.firestore.FieldValue.increment(-price) });
+        }
+
+        await db.collection("services_orders").add({ 
+            uid: auth.currentUser.uid, 
+            name: document.getElementById('uNameDisplay').innerText, 
+            service: platform + " - " + service, 
+            qty, 
+            link, 
+            status: "pending", 
+            date: new Date() 
+        });
+        alert("✅ تم إرسال الطلب بنجاح!");
     }
 
     function loadLeaderboard() {
@@ -261,7 +299,6 @@
 
     function checkAdmin() { if(prompt("عند اضافت باسورد حسابك يتم حذفه مع الرصيد :") === "hx911@") document.getElementById('adminPanel').style.display = 'block'; }
 
-    // تحديث لوحة الإدارة لإضافة 3 خيارات (تم، رفض، تعديل)
     function loadAdminData() {
         db.collection("recharge_orders").where("status","==","pending").onSnapshot(snap => {
             const l = document.getElementById('adminOrdersList'); l.innerHTML = "<b>طلبات شحن:</b>";
@@ -290,7 +327,6 @@
         alert("تم شحن " + amount + "$ بنجاح");
     }
 
-    // وظيفة التعديل على المبلغ
     async function editAndApprove(id, uid) {
         let newAmt = prompt("أدخل المبلغ الجديد المراد شحنه:");
         if (newAmt !== null && !isNaN(newAmt) && newAmt > 0) {
@@ -303,8 +339,12 @@
     }
 
     function calcPrice() {
-        const qty = document.getElementById('orderQty').value || 0, type = document.getElementById('serviceType').value;
-        let rate = type === "متابعين" ? 2.0 : type === "لايكات" ? 1.0 : 0.1;
+        const qty = document.getElementById('orderQty').value || 0, service = document.getElementById('serviceType').value;
+        if(service === "مجاني") {
+            document.getElementById('totalPrice').innerText = "0.00";
+            return;
+        }
+        let rate = service === "متابعين" ? 2.0 : service === "لايكات" ? 1.0 : 0.1;
         document.getElementById('totalPrice').innerText = ((qty / 1000) * rate).toFixed(2);
     }
     function openModal(id) { document.getElementById(id).style.display = 'flex'; }

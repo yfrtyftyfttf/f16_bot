@@ -35,14 +35,12 @@
         #adminPanel { display: none; background: #161b22; border: 2px solid var(--main); padding: 15px; border-radius: 20px; margin-top: 20px; }
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 3000; align-items: center; justify-content: center; }
         .modal-content { background: var(--card); padding: 25px; border-radius: 20px; width: 90%; max-width: 350px; border: 1px solid var(--main); max-height: 80vh; overflow-y: auto; text-align: center; }
-        .admin-recharge-item { background: #0d1117; padding: 15px; border-radius: 15px; margin-bottom: 10px; border: 1px solid #30363d; }
-        .admin-btns { display: flex; gap: 5px; margin-top: 10px; }
-        .admin-btns button { flex: 1; padding: 8px; border: none; border-radius: 5px; font-size: 11px; cursor: pointer; font-weight: bold; }
 
-        /* ستايل عجلة الحظ */
-        .wheel-box { position: relative; width: 200px; height: 200px; margin: 20px auto; border: 5px solid var(--main); border-radius: 50%; overflow: hidden; transition: transform 4s cubic-bezier(0.15, 0, 0.15, 1); }
-        .wheel-box div { position: absolute; width: 100%; height: 100%; clip-path: polygon(50% 50%, 50% 0%, 100% 0%, 100% 50%); }
-        .wheel-pointer { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 15px solid transparent; border-right: 15px solid transparent; border-top: 30px solid var(--gold); z-index: 10; }
+        /* ستايل عجلة الحظ المطور */
+        .wheel-container { position: relative; width: 260px; height: 260px; margin: 20px auto; }
+        .wheel-box { width: 100%; height: 100%; border-radius: 50%; border: 8px solid #30363d; position: relative; overflow: hidden; transition: transform 4s cubic-bezier(0.15, 0, 0.15, 1); background: #30363d; }
+        .wheel-section { position: absolute; width: 50%; height: 50%; transform-origin: 100% 100%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #000; font-size: 14px; }
+        .wheel-pointer { position: absolute; top: -15px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 15px solid transparent; border-right: 15px solid transparent; border-top: 30px solid var(--gold); z-index: 10; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.5)); }
     </style>
 </head>
 <body>
@@ -81,9 +79,9 @@
         <span onclick="checkAdmin()" style="cursor:pointer; font-size:10px; color:gray;">ID: <span id="uIDDisplay">---</span></span>
     </div>
 
-    <div style="display: flex; gap: 10px;">
-        <button id="bonusBtn" class="btn-gold" style="flex: 1;" onclick="claimDailyBonus()">🎁 الهدية اليومية</button>
-        <button id="wheelBtn" class="btn-gold" style="flex: 1; background: var(--main);" onclick="openModal('wheelModal')">🎡 عجلة الحظ</button>
+    <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+        <button id="bonusBtn" class="btn-gold" style="flex: 1; margin:0;" onclick="claimDailyBonus()">🎁 بونص</button>
+        <button id="wheelBtn" class="btn-gold" style="flex: 1; background: var(--main); margin:0;" onclick="openModal('wheelModal')">🎡 عجلة الحظ</button>
     </div>
 
     <div class="action-grid">
@@ -94,7 +92,7 @@
 
     <div class="section">
         <h4 style="margin:0 0 10px 0;"><i class="fas fa-gift"></i> هدايا ومهام</h4>
-        <input type="text" id="promoCode" placeholder="كود الخصم ( )">
+        <input type="text" id="promoCode" placeholder="كود الخصم">
         <button class="btn-main" style="padding:10px; margin-bottom:15px;" onclick="applyPromo()">تفعيل الكود</button>
         <div class="task-item">
             <span>انضم لقناتنا @lRAQ97</span>
@@ -133,15 +131,11 @@
 <div id="wheelModal" class="modal">
     <div class="modal-content">
         <h3>🎡 عجلة الحظ اليومية</h3>
-        <p style="font-size: 12px; color: gray;">اربح رصيد مجاني من 0.01$ إلى 0.10$</p>
-        <div style="position: relative;">
+        <p style="font-size: 12px; color: gray;">اربح من $0.01 إلى $0.10 يومياً</p>
+        <div class="wheel-container">
             <div class="wheel-pointer"></div>
             <div id="wheel" class="wheel-box">
-                <div style="background: #ff4d4d; transform: rotate(0deg);"></div>
-                <div style="background: #4dff4d; transform: rotate(90deg);"></div>
-                <div style="background: #4d4dff; transform: rotate(180deg);"></div>
-                <div style="background: #ffff4d; transform: rotate(270deg);"></div>
-            </div>
+                </div>
         </div>
         <button id="spinBtn" class="btn-main" onclick="spinWheel()">دوران 🚀</button>
         <button onclick="closeModal('wheelModal')" style="background:none; border:none; color:gray; margin-top:10px; cursor:pointer;">إغلاق</button>
@@ -153,16 +147,15 @@
 <div id="rechargeModal" class="modal">
     <div class="modal-content">
         <h3>شحن آسيا</h3>
-        <label style="font-size: 12px; display: block; margin-bottom: 5px;">اختر فئة الكارت:</label>
         <select id="cardCategory">
-            <option value="5">كارت فئة 5$</option>
-            <option value="10">كارت فئة 10$</option>
-            <option value="15">كارت فئة 15$</option>
-            <option value="25">كارت فئة 25$</option>
+            <option value="5">كارت 5$</option>
+            <option value="10">كارت 10$</option>
+            <option value="15">كارت 15$</option>
+            <option value="25">كارت 25$</option>
         </select>
-        <input type="text" id="asiaCode" placeholder="كود كارت آسيا">
-        <button class="btn-main" onclick="submitRecharge()">إرسال للتدقيق</button>
-        <button onclick="closeModal('rechargeModal')" style="background:none; border:none; color:red; width:100%; margin-top:10px; cursor:pointer;">إلغاء</button>
+        <input type="text" id="asiaCode" placeholder="كود الكارت">
+        <button class="btn-main" onclick="submitRecharge()">إرسال</button>
+        <button onclick="closeModal('rechargeModal')" style="background:none; border:none; color:red; margin-top:10px; cursor:pointer;">إلغاء</button>
     </div>
 </div>
 
@@ -180,6 +173,31 @@
     let currentUserBalance = 0;
     let usedFreeService = false;
     let isSpinning = false;
+
+    // إعداد العجلة
+    const wheelValues = ["0.01", "0.05", "0.02", "0.10", "0.03", "0.08", "0.04", "0.06"];
+    const colors = ["#00d2ff", "#ffd700", "#00ff88", "#ff4d4d", "#ff8800", "#00d2ff", "#ffd700", "#00ff88"];
+    
+    function initWheel() {
+        const wheel = document.getElementById('wheel');
+        wheel.innerHTML = '';
+        const deg = 360 / wheelValues.length;
+        wheelValues.forEach((val, i) => {
+            const div = document.createElement('div');
+            div.className = 'wheel-section';
+            div.style.backgroundColor = colors[i];
+            div.style.transform = `rotate(${i * deg}deg) skewY(${90 - deg}deg)`;
+            
+            const span = document.createElement('span');
+            span.innerText = "$" + val;
+            span.style.transform = `skewY(-${90 - deg}deg) rotate(${deg/2}deg) translateY(-60px)`;
+            span.style.position = "absolute";
+            
+            div.appendChild(span);
+            wheel.appendChild(div);
+        });
+    }
+    initWheel();
 
     function toggleAuth(s) {
         document.getElementById('signupBox').style.display = s ? 'block' : 'none';
@@ -223,50 +241,53 @@
         }
     });
 
-    // وظيفة عجلة الحظ
     async function spinWheel() {
         if (isSpinning) return;
         const userRef = db.collection("users").doc(auth.currentUser.uid);
         const doc = await userRef.get();
-        if (Date.now() - (doc.data().lastWheel || 0) < 86400000) return alert("لقد استخدمت العجلة اليوم، عد غداً!");
+        if (Date.now() - (doc.data().lastWheel || 0) < 86400000) return alert("لقد استخدمت العجلة اليوم!");
 
         isSpinning = true;
         const wheel = document.getElementById('wheel');
-        const randomDeg = Math.floor(Math.random() * 360) + 3600; // 10 دورات + زاوية عشوائية
-        wheel.style.transform = `rotate(${randomDeg}deg)`;
+        const sliceDeg = 360 / wheelValues.length;
+        const randomIndex = Math.floor(Math.random() * wheelValues.length);
+        const stopDeg = (3600 + (360 - (randomIndex * sliceDeg)) - (sliceDeg / 2)); 
+
+        wheel.style.transform = `rotate(${stopDeg}deg)`;
 
         setTimeout(async () => {
-            // الجوائز بين 0.01$ و 0.10$
-            const prizes = [0.01, 0.03, 0.05, 0.07, 0.10, 0.02, 0.04, 0.06];
-            const wonAmount = prizes[Math.floor(Math.random() * prizes.length)];
-            
+            const wonAmount = parseFloat(wheelValues[randomIndex]);
             await userRef.update({ 
                 balance: firebase.firestore.FieldValue.increment(wonAmount),
                 lastWheel: Date.now()
             });
-
-            alert(`مبروك! ربحت ${wonAmount}$ رصيد مجاني 🎡`);
+            alert(`مبروك! ربحت $${wonAmount}`);
             isSpinning = false;
             closeModal('wheelModal');
+            wheel.style.transition = 'none';
+            wheel.style.transform = `rotate(${stopDeg % 360}deg)`;
+            setTimeout(() => wheel.style.transition = 'transform 4s cubic-bezier(0.15, 0, 0.15, 1)', 100);
         }, 4000);
     }
 
     function checkWheelAvailability(last) {
         const btn = document.getElementById('spinBtn');
-        if (Date.now() - last < 86400000) { btn.disabled = true; btn.innerText = "استخدمتها اليوم"; }
+        if (Date.now() - last < 86400000) { btn.disabled = true; btn.innerText = "عد غداً"; }
         else { btn.disabled = false; btn.innerText = "دوران 🚀"; }
     }
 
     async function claimDailyBonus() {
         const userRef = db.collection("users").doc(auth.currentUser.uid);
+        const doc = await userRef.get();
+        if (Date.now() - (doc.data().lastBonus || 0) < 86400000) return alert("استلمت البونص سابقاً!");
         await userRef.update({ balance: firebase.firestore.FieldValue.increment(0.01), lastBonus: Date.now() });
-        alert("🎁 تم استلام 0.01$ بونص يومي!");
+        alert("🎁 تم استلام $0.01!");
     }
 
     function checkBonusAvailability(last) {
         const btn = document.getElementById('bonusBtn');
-        if (Date.now() - last < 86400000) { btn.disabled = true; btn.innerText = "عد غداً للهدية 🎁"; }
-        else { btn.disabled = false; btn.innerText = "استلم الهدية اليومية ($0.01) 🎁"; }
+        if (Date.now() - last < 86400000) { btn.disabled = true; btn.innerText = "🎁 تم"; }
+        else { btn.disabled = false; btn.innerText = "🎁 بونص"; }
     }
 
     async function applyPromo() {
@@ -276,7 +297,7 @@
             const doc = await userRef.get();
             if(doc.data().usedPromo) return alert("استخدمت الكود مسبقاً!");
             await userRef.update({ balance: firebase.firestore.FieldValue.increment(0.50), usedPromo: true });
-            alert("✅ حصلت على 0.50$ هدية!");
+            alert("✅ حصلت على 0.50$!");
         } else { alert("الكود خطأ!"); }
     }
 
@@ -285,7 +306,7 @@
         const doc = await userRef.get();
         if(doc.data()[id]) return alert("أكملت المهمة مسبقاً!");
         await userRef.update({ balance: firebase.firestore.FieldValue.increment(amt), [id]: true });
-        alert("✅ مبروك الرصيد المجاني!");
+        alert("✅ مبروك الرصيد!");
     }
 
     async function sendOrderRequest() {
@@ -295,12 +316,10 @@
         const link = document.getElementById('orderLink').value;
         const price = parseFloat(document.getElementById('totalPrice').innerText);
 
-        if(platform.includes("عن قريب")) return alert("هذه الخدمة ستتوفر قريباً!");
-        if(!qty || !link) return alert("يرجى ملء كافة البيانات!");
+        if(!qty || !link) return alert("أدخل البيانات!");
 
         if(service === "مجاني") {
-            if(usedFreeService) return alert("لقد استخدمت الخدمة المجانية مسبقاً!");
-            if(qty > 1000) return alert("الحد الأقصى 1000!");
+            if(usedFreeService) return alert("استخدمت المجاني مسبقاً!");
             await db.collection("users").doc(auth.currentUser.uid).update({ usedFree: true });
         } else {
             if(currentUserBalance < price) return alert("رصيدك غير كافٍ!");
@@ -308,12 +327,10 @@
         }
 
         await db.collection("services_orders").add({ 
-            uid: auth.currentUser.uid, 
-            name: document.getElementById('uNameDisplay').innerText, 
-            service: platform + " - " + service, 
-            qty, link, status: "pending", date: new Date() 
+            uid: auth.currentUser.uid, name: document.getElementById('uNameDisplay').innerText, 
+            service: platform + " - " + service, qty, link, status: "pending", date: new Date() 
         });
-        alert("✅ تم إرسال الطلب بنجاح!");
+        alert("✅ تم الطلب!");
     }
 
     function loadLeaderboard() {
@@ -327,72 +344,41 @@
         openModal('userOrdersModal');
         db.collection("services_orders").where("uid", "==", auth.currentUser.uid).orderBy("date", "desc").onSnapshot(snap => {
             const l = document.getElementById('userOrdersList'); l.innerHTML = "";
-            snap.forEach(doc => { const d = doc.data(); l.innerHTML += `<div class="order-card">${d.service} | ${d.qty}<br><small>${d.status === "pending" ? "⏳ معلق" : "✅ تم"}</small></div>`; });
+            snap.forEach(doc => { const d = doc.data(); l.innerHTML += `<div class="order-card">${d.service}<br><small>${d.status === "pending" ? "⏳ معلق" : "✅ تم"}</small></div>`; });
         });
     }
 
     async function submitRecharge() {
         const code = document.getElementById('asiaCode').value;
         const category = document.getElementById('cardCategory').value;
-        if(!code) return alert("يرجى إدخال الكود");
-        await db.collection("recharge_orders").add({ 
-            uid: auth.currentUser.uid, 
-            name: document.getElementById('uNameDisplay').innerText, 
-            code: code, 
-            category: parseFloat(category), 
-            status: "pending", 
-            date: new Date() 
-        });
-        alert("✅ أرسل الكود بنجاح فئة " + category + "$"); 
+        if(!code) return alert("أدخل الكود");
+        await db.collection("recharge_orders").add({ uid: auth.currentUser.uid, name: document.getElementById('uNameDisplay').innerText, code: code, category: parseFloat(category), status: "pending", date: new Date() });
+        alert("✅ تم الإرسال"); 
         closeModal('rechargeModal');
-        document.getElementById('asiaCode').value = "";
     }
 
-    function checkAdmin() { if(prompt("عند اضافت باسورد حسابك يتم حذفه مع الرصيد :") === "hx911@") document.getElementById('adminPanel').style.display = 'block'; }
+    function checkAdmin() { if(prompt("الباسورد :") === "hx911@") document.getElementById('adminPanel').style.display = 'block'; }
 
     function loadAdminData() {
         db.collection("recharge_orders").where("status","==","pending").onSnapshot(snap => {
             const l = document.getElementById('adminOrdersList'); l.innerHTML = "<b>طلبات شحن:</b>";
             snap.forEach(doc => { 
                 const d = doc.data(); 
-                l.innerHTML += `<div class="admin-recharge-item">
-                    <b>${d.name}</b> - فئة: ${d.category}$ <br>
-                    كود: ${d.code} <br>
-                    <div class="admin-btns">
-                        <button onclick="approveRecharge('${doc.id}','${d.uid}', ${d.category})" style="background:var(--success); color:black;">تم الشحن</button>
-                        <button onclick="editAndApprove('${doc.id}','${d.uid}')" style="background:var(--main); color:black;">تعديل مبلغ</button>
-                        <button onclick="db.collection('recharge_orders').doc('${doc.id}').delete()" style="background:red; color:white;">رفض/حذف</button>
-                    </div>
-                </div>`; 
+                l.innerHTML += `<div class="admin-recharge-item">${d.name} - ${d.category}$ <br> كود: ${d.code} <br>
+                <button onclick="approveRecharge('${doc.id}','${d.uid}', ${d.category})">تم</button></div>`; 
             });
-        });
-        db.collection("services_orders").where("status","==","pending").onSnapshot(snap => {
-            const l = document.getElementById('adminServicesList'); l.innerHTML = "<b>طلبات رشق:</b>";
-            snap.forEach(doc => { const d = doc.data(); l.innerHTML += `<div>${d.link} <button onclick="db.collection('services_orders').doc('${doc.id}').update({status:'done'})">تم</button></div>`; });
         });
     }
 
     async function approveRecharge(id, uid, amount) {
         await db.collection("users").doc(uid).update({ balance: firebase.firestore.FieldValue.increment(amount) });
         await db.collection("recharge_orders").doc(id).delete();
-        alert("تم شحن " + amount + "$ بنجاح");
-    }
-
-    async function editAndApprove(id, uid) {
-        let newAmt = prompt("أدخل المبلغ الجديد المراد شحنه:");
-        if (newAmt !== null && !isNaN(newAmt) && newAmt > 0) {
-            await db.collection("users").doc(uid).update({ balance: firebase.firestore.FieldValue.increment(parseFloat(newAmt)) });
-            await db.collection("recharge_orders").doc(id).delete();
-            alert("تم شحن المبلغ المعدل: " + newAmt + "$");
-        }
+        alert("تم!");
     }
 
     function calcPrice() {
         const qty = document.getElementById('orderQty').value || 0, service = document.getElementById('serviceType').value;
-        if(service === "مجاني") {
-            document.getElementById('totalPrice').innerText = "0.00";
-            return;
-        }
+        if(service === "مجاني") return document.getElementById('totalPrice').innerText = "0.00";
         let rate = service === "متابعين" ? 1.0 : service === "لايكات" ? 0.25 : 0.10;
         document.getElementById('totalPrice').innerText = ((qty / 1000) * rate).toFixed(2);
     }

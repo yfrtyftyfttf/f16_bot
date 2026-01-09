@@ -1,131 +1,43 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>F16 Dashboard</title>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
-    
-    <style>
-        body { font-family: sans-serif; background: #0a0b0e; color: white; margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
-        .card { background: #1a1c23; padding: 25px; border-radius: 20px; width: 90%; max-width: 400px; text-align: center; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .balance-card { background: #005f73; padding: 20px; border-radius: 15px; margin-bottom: 20px; border: 1px solid #00d2ff; }
-        input, select { width: 100%; padding: 12px; margin: 10px 0; border-radius: 10px; border: none; background: #0f0c29; color: white; box-sizing: border-box; }
-        .btn { background: #00d2ff; color: white; border: none; padding: 12px; width: 100%; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 10px; }
-        #authOverlay { position: fixed; inset: 0; background: #0a0b0e; z-index: 1000; display: flex; justify-content: center; align-items: center; }
-    </style>
-</head>
-<body>
+<script>
+    async function sendOrder() {
+        const btn = document.getElementById('orderBtn');
+        const qty = document.getElementById('qty').value;
+        const srv = document.getElementById('srv').value;
 
-    <div id="authOverlay">
-        <div class="card">
-            <h2>تسجيل الدخول</h2>
-            <input type="email" id="email" placeholder="البريد الإلكتروني">
-            <input type="password" id="pass" placeholder="كلمة المرور">
-            <button class="btn" onclick="handleAuth()">دخول</button>
-            <p id="authStatus" style="font-size: 12px; color: gray; margin-top: 10px;"></p>
-        </div>
-    </div>
+        if(!qty) return alert("أدخل الكمية");
 
-    <div class="card">
-        <div class="balance-card">
-            <h3 id="uName">جاري التحميل...</h3>
-            <h1 id="uBalance">$0.00</h1>
-        </div>
-        
-        <select id="srv">
-            <option value="3">متابعين انستقرام ($3/1k)</option>
-            <option value="1">لايكات انستقرام ($1/1k)</option>
-        </select>
-        <input type="number" id="qty" placeholder="الكمية">
-        
-        <button class="btn" id="orderBtn" onclick="sendOrder()">تأكيد الطلب 🚀</button>
-        <button onclick="firebase.auth().signOut()" style="background:none; border:none; color:gray; cursor:pointer; margin-top:15px; font-size:12px;">تسجيل خروج</button>
-    </div>
+        btn.disabled = true;
+        btn.innerText = "⏳ جاري الإرسال...";
 
-    <script>
-        // 1. إعدادات Firebase
-        const firebaseConfig = {
-            apiKey: "AIzaSyDrLSVoJJsEzlmcIBvNNb9OJzWtJixYhpw",
-            authDomain: "army-smm.firebaseapp.com",
-            projectId: "army-smm",
-            storageBucket: "army-smm.firebasestorage.app",
-            messagingSenderId: "27268417960",
-            appId: "1:27268417960:web:990e040e77a0c38a11f59d"
-        };
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const db = firebase.firestore();
-
-        // 2. منطق الحسابات والدخول
-        async function handleAuth() {
-            const e = document.getElementById('email').value, p = document.getElementById('pass').value;
-            if(!e || !p) return alert("يرجى إدخال البيانات");
-            try {
-                await auth.signInWithEmailAndPassword(e, p).catch(async () => {
-                    const r = await auth.createUserWithEmailAndPassword(e, p);
-                    await db.collection("users").doc(r.user.uid).set({ name: "عميل جديد", balance: 10.0 }); // رصيد تجريبي 10$
-                });
-            } catch (err) { alert(err.message); }
-        }
-
-        auth.onAuthStateChanged(user => {
-            if (user) {
-                document.getElementById('authOverlay').style.display = 'none';
-                db.collection("users").doc(user.uid).onSnapshot(doc => {
-                    if(doc.exists) {
-                        document.getElementById('uName').innerText = "مرحباً: " + doc.data().name;
-                        document.getElementById('uBalance').innerText = "$" + doc.data().balance.toFixed(2);
-                    }
-                });
-            } else { document.getElementById('authOverlay').style.display = 'flex'; }
-        });
-
-        // 3. دالة الإرسال (تم دمج منطق كود الفحص الناجح هنا)
-        async function sendOrder() {
-            const btn = document.getElementById('orderBtn');
-            const qty = document.getElementById('qty').value;
-            const srvText = document.getElementById('srv').options[document.getElementById('srv').selectedIndex].text;
-
-            if(!qty) return alert("يرجى إدخال الكمية");
-
-            btn.disabled = true;
-            btn.innerText = "⏳ جاري الإرسال...";
-
-            try {
-                const user = auth.currentUser;
-                const userSnap = await db.collection("users").doc(user.uid).get();
-                const userName = userSnap.exists ? userSnap.data().name : "عميل";
-
-                const response = await fetch('https://army-bot-3y9o.onrender.com/send_order', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        user_name: userName,
-                        user_uid: user.uid,
-                        type: "طلب رشق",
-                        details: {
-                            "الخدمة": srvText,
-                            "الكمية": qty,
-                            "الوقت": new Date().toLocaleTimeString()
-                        }
-                    })
-                });
-
-                if (response.ok) {
-                    alert("✅ تم إرسال طلبك بنجاح!");
-                } else {
-                    alert("❌ السيرفر لم يستجب بشكل صحيح");
-                }
-            } catch (err) {
-                alert("⚠️ خطأ في الاتصال: " + err.message);
-            } finally {
-                btn.disabled = false;
-                btn.innerText = "تأكيد الطلب 🚀";
+        // تجهيز البيانات ببساطة مثل كود الفحص الناجح
+        const orderData = {
+            user_name: document.getElementById('uName').innerText,
+            type: "طلب رشق",
+            details: {
+                "الكمية": qty,
+                "الخدمة": srv == "3" ? "متابعين" : "لايكات"
             }
+        };
+
+        try {
+            const response = await fetch('https://army-bot-3y9o.onrender.com/send_order', {
+                method: 'POST',
+                mode: 'cors', // ضروري جداً لتجنب خطأ الاتصال
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(orderData)
+            });
+
+            if (response.ok) {
+                alert("✅ تم الإرسال بنجاح!");
+            } else {
+                alert("❌ فشل السيرفر في الرد");
+            }
+        } catch (err) {
+            console.error(err);
+            alert("⚠️ خطأ في الاتصال: تأكد من أن السيرفر Live في Render");
+        } finally {
+            btn.disabled = false;
+            btn.innerText = "تأكيد الطلب 🚀";
         }
-    </script>
-</body>
-</html>
+    }
+</script>

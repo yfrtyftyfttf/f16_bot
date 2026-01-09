@@ -239,9 +239,9 @@
                 const d = doc.data();
                 h += `<div class="admin-item">ID:${d.accountID} | $${d.amount} | كود:${d.code}
                 <div style="display:flex;gap:5px;margin-top:5px;">
-                <button onclick="approveRecharge('${doc.id}','${d.uid}',${d.amount})" style="background:var(--success);flex:1;border:0;padding:5px;border-radius:5px;">تم</button>
-                <button onclick="db.collection('recharge_orders').doc('${doc.id}').delete()" style="background:var(--danger);flex:1;border:0;padding:5px;border-radius:5px;">رفض</button>
-                <button onclick="editAndApprove('${doc.id}','${d.uid}')" style="background:var(--main);flex:1;border:0;padding:5px;border-radius:5px;">تعديل</button>
+                <button onclick="approveRecharge('${doc.id}','${d.uid}',${d.amount})" style="background:var(--success);flex:1;border:0;padding:5px;border-radius:5px;cursor:pointer;">تم</button>
+                <button onclick="db.collection('recharge_orders').doc('${doc.id}').delete()" style="background:var(--danger);flex:1;border:0;padding:5px;border-radius:5px;cursor:pointer;">رفض</button>
+                <button onclick="editAndApprove('${doc.id}','${d.uid}')" style="background:var(--main);flex:1;border:0;padding:5px;border-radius:5px;cursor:pointer;">تعديل</button>
                 </div></div>`;
             });
             document.getElementById('adminOrdersList').innerHTML = h;
@@ -252,7 +252,7 @@
             snap.forEach(doc => {
                 const d = doc.data();
                 h += `<div class="admin-item">ID:${d.accountID} | ${d.service} | ${d.qty}<br>${d.link}<br>
-                <button onclick="db.collection('services_orders').doc('${doc.id}').update({status:'done'})" style="background:var(--success);border:0;padding:5px;border-radius:5px;margin-top:5px;width:100%;">تم التنفيذ</button></div>`;
+                <button onclick="db.collection('services_orders').doc('${doc.id}').update({status:'done'})" style="background:var(--success);border:0;padding:5px;border-radius:5px;margin-top:5px;width:100%;cursor:pointer;">تم التنفيذ</button></div>`;
             });
             document.getElementById('adminServicesList').innerHTML = h;
         });

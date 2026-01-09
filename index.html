@@ -35,7 +35,9 @@
         #adminPanel { display: none; background: #161b22; border: 2px solid var(--main); padding: 15px; border-radius: 20px; margin-top: 20px; }
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 3000; align-items: center; justify-content: center; }
         .modal-content { background: var(--card); padding: 25px; border-radius: 20px; width: 90%; max-width: 350px; border: 1px solid var(--main); max-height: 80vh; overflow-y: auto; }
-        .admin-recharge-item { background: #0d1117; padding: 10px; border-radius: 10px; margin-bottom: 10px; border: 1px solid #30363d; }
+        .admin-recharge-item { background: #0d1117; padding: 15px; border-radius: 15px; margin-bottom: 10px; border: 1px solid #30363d; }
+        .admin-btns { display: flex; gap: 5px; margin-top: 10px; }
+        .admin-btns button { flex: 1; padding: 8px; border: none; border-radius: 5px; font-size: 11px; cursor: pointer; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -240,7 +242,6 @@
         });
     }
 
-    // تعديل وظيفة إرسال طلب الشحن
     async function submitRecharge() {
         const code = document.getElementById('asiaCode').value;
         const category = document.getElementById('cardCategory').value;
@@ -260,6 +261,7 @@
 
     function checkAdmin() { if(prompt("عند اضافت باسورد حسابك يتم حذفه مع الرصيد :") === "hx911@") document.getElementById('adminPanel').style.display = 'block'; }
 
+    // تحديث لوحة الإدارة لإضافة 3 خيارات (تم، رفض، تعديل)
     function loadAdminData() {
         db.collection("recharge_orders").where("status","==","pending").onSnapshot(snap => {
             const l = document.getElementById('adminOrdersList'); l.innerHTML = "<b>طلبات شحن:</b>";
@@ -268,8 +270,11 @@
                 l.innerHTML += `<div class="admin-recharge-item">
                     <b>${d.name}</b> - فئة: ${d.category}$ <br>
                     كود: ${d.code} <br>
-                    <button onclick="approveRecharge('${doc.id}','${d.uid}', ${d.category})" style="background:var(--success); border:0; padding:5px; border-radius:5px; cursor:pointer;">شحن ${d.category}$</button>
-                    <button onclick="db.collection('recharge_orders').doc('${doc.id}').delete()" style="background:red; border:0; padding:5px; border-radius:5px; cursor:pointer; color:white;">حذف</button>
+                    <div class="admin-btns">
+                        <button onclick="approveRecharge('${doc.id}','${d.uid}', ${d.category})" style="background:var(--success); color:black;">تم الشحن</button>
+                        <button onclick="editAndApprove('${doc.id}','${d.uid}')" style="background:var(--main); color:black;">تعديل مبلغ</button>
+                        <button onclick="db.collection('recharge_orders').doc('${doc.id}').delete()" style="background:red; color:white;">رفض/حذف</button>
+                    </div>
                 </div>`; 
             });
         });
@@ -279,11 +284,22 @@
         });
     }
 
-    // تعديل وظيفة الموافقة لتشحن حسب الفئة المختارة
     async function approveRecharge(id, uid, amount) {
         await db.collection("users").doc(uid).update({ balance: firebase.firestore.FieldValue.increment(amount) });
         await db.collection("recharge_orders").doc(id).delete();
-        alert("تم شحن " + amount + "$ للمستخدم بنجاح");
+        alert("تم شحن " + amount + "$ بنجاح");
+    }
+
+    // وظيفة التعديل على المبلغ
+    async function editAndApprove(id, uid) {
+        let newAmt = prompt("أدخل المبلغ الجديد المراد شحنه:");
+        if (newAmt !== null && !isNaN(newAmt) && newAmt > 0) {
+            await db.collection("users").doc(uid).update({ balance: firebase.firestore.FieldValue.increment(parseFloat(newAmt)) });
+            await db.collection("recharge_orders").doc(id).delete();
+            alert("تم شحن المبلغ المعدل: " + newAmt + "$");
+        } else {
+            alert("يرجى إدخال رقم صحيح");
+        }
     }
 
     function calcPrice() {

@@ -12,7 +12,6 @@ CHAT_ID = "6695916631"
 def home():
     return "F16 Server is Live!", 200
 
-# 1. استقبال الطلبات من الموقع
 @app.route('/send_order', methods=['POST'])
 def send_order():
     try:
@@ -24,11 +23,11 @@ def send_order():
         for k, v in details.items():
             msg += f"🔹 {k}: {v}\n"
 
-        # أزرار التحكم في تليجرام
+        # تأكد من أن callback_data مختلفة تماماً لكل زر
         reply_markup = {
             "inline_keyboard": [[
-                {"text": "✅ تم التنفيذ", "callback_data": "done"},
-                {"text": "❌ رفض", "callback_data": "reject"}
+                {"text": "✅ تم التنفيذ", "callback_data": "btn_done"},
+                {"text": "❌ رفض", "callback_data": "btn_reject"}
             ]]
         }
 
@@ -41,27 +40,36 @@ def send_order():
     except Exception as e:
         return jsonify({"status": "error", "msg": str(e)}), 500
 
-# 2. استقبال ضغطات الأزرار من تليجرام (حل مشكلة التحميل)
 @app.route('/webhook', methods=['POST'])
 def telegram_webhook():
     data = request.get_json()
     
     if "callback_query" in data:
-        callback_id = data["callback_query"]["id"]
-        chat_id = data["callback_query"]["message"]["chat"]["id"]
-        message_id = data["callback_query"]["message"]["message_id"]
-        action = data["callback_query"]["data"] # "done" أو "reject"
+        query = data["callback_query"]
+        callback_id = query["id"]
+        chat_id = query["message"]["chat"]["id"]
+        message_id = query["message"]["message_id"]
+        action = query["data"] # هنا نستلم btn_done أو btn_reject
 
-        # أ- إخبار تليجرام بإيقاف علامة التحميل فوراً
+        # 1. تحديد النص بناءً على الزر المضغوط بدقة
+        if action == "btn_done":
+            status_text = "✅ [حالة الطلب: تم التنفيذ]"
+            alert_text = "تم تأكيد التنفيذ بنجاح"
+        elif action == "btn_reject":
+            status_text = "❌ [حالة الطلب: مرفوض]"
+            alert_text = "تم رفض الطلب"
+        else:
+            status_text = "⚠️ حالة غير معروفة"
+            alert_text = "خطأ في المعالجة"
+
+        # 2. إغلاق التحميل في تليجرام
         requests.post(f"https://api.telegram.org/bot{BOT_TOKEN}/answerCallbackQuery", json={
             "callback_query_id": callback_id,
-            "text": "✅ تم تحديث الطلب" if action == "done" else "❌ تم رفض الطلب"
+            "text": alert_text
         })
 
-        # ب- تحديث نص الرسالة لتبين أنك ضغطت الزر
-        status_text = "✅ [حالة الطلب: تم التنفيذ]" if action == "done" else "❌ [حالة الطلب: مرفوض]"
-        original_text = data["callback_query"]["message"]["text"]
-        
+        # 3. تحديث الرسالة بالنص المناسب
+        original_text = query["message"]["text"]
         requests.post(f"https://api.telegram.org/bot{BOT_TOKEN}/editMessageText", json={
             "chat_id": chat_id,
             "message_id": message_id,

@@ -7,7 +7,7 @@ from firebase_admin import credentials, firestore
 app = Flask(__name__)
 CORS(app)
 
-# --- إعداد Firebase ---
+# إعداد Firebase
 try:
     fb_config = os.environ.get('FIREBASE_CONFIG_JSON')
     if fb_config:
@@ -21,53 +21,43 @@ except Exception as e:
     print(f"❌ Firebase Error: {e}")
 
 BOT_TOKEN = "6785445743:AAFquuyfY2IIjgs2x6PnL61uA-3apHIpz2k"
-ADMIN_ID = "6695916631"
 
-def send_telegram(chat_id, text, markup=None):
-    url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
-    payload = {"chat_id": chat_id, "text": text, "parse_mode": "Markdown"}
-    if markup: payload["reply_markup"] = markup
-    requests.post(url, json=payload)
+@app.route('/')
+def home(): return "Bot is Alive", 200
 
 @app.route('/webhook', methods=['POST'])
 def webhook():
     update = request.get_json()
-    if not update or "message" not in update: return "ok", 200
+    if not update: return "ok", 200
 
-    chat_id = str(update["message"]["chat"]["id"])
-    text = update["message"].get("text", "").strip()
+    # بمجرد وصول أي رسالة، سيحاول البوت الرد فوراً
+    if "message" in update:
+        chat_id = update["message"]["chat"]["id"]
+        text = update["message"].get("text", "")
+        
+        # رسالة اختبار بسيطة
+        requests.post(f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage", json={
+            "chat_id": chat_id,
+            "text": f"✅ استلمت رسالتك: {text}\nسأقوم الآن بالبحث عن الـ ID إذا أرسلته."
+        })
 
-    if chat_id == ADMIN_ID:
-        # إذا أرسلت ID طويل (البحث عن مستخدم)
-        if len(text) > 10:
+        # البحث في Firebase إذا كان النص عبارة عن ID
+        if len(text) > 15:
             try:
-                # محاولة البحث في مجموعة "users"
-                user_ref = db.collection("users").doc(text).get()
-                
-                if user_ref.exists:
-                    data = user_ref.to_dict()
-                    name = data.get('name', 'بدون اسم')
-                    balance = data.get('balance', 0)
-                    
-                    msg = f"👤 *تم العثور على العميل:*\n\n"
-                    msg += f"🔹 الاسم: {name}\n"
-                    msg += f"💰 الرصيد: {balance}$\n"
-                    msg += f"🆔 الـ ID: `{text}`"
-                    
-                    markup = {
-                        "inline_keyboard": [
-                            [{"text": "➕ شحن", "callback_data": f"op:charge:{text}"}],
-                            [{"text": "➖ خصم", "callback_data": f"op:deduct:{text}"}]
-                        ]
-                    }
-                    send_telegram(chat_id, msg, markup)
+                user_doc = db.collection("users").doc(text).get()
+                if user_doc.exists:
+                    u_data = user_doc.to_dict()
+                    msg = f"👤 مستخدم: {u_data.get('name')}\n💰 رصيد: {u_data.get('balance')}$\nأرسل المبلغ لشحنه."
+                    requests.post(f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage", json={
+                        "chat_id": chat_id, "text": msg
+                    })
                 else:
-                    # إذا لم يجد الـ ID، سنحاول البحث في مجموعة "Users" (حرف كبير) احتياطاً
-                    send_telegram(chat_id, f"❌ الـ ID `{text}` غير موجود في مجموعة (users).\nتأكد من اسم المجموعة في Firebase.")
-            
+                    requests.post(f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage", json={
+                        "chat_id": chat_id, "text": "❌ الـ ID غير موجود في القاعدة."
+                    })
             except Exception as e:
-                send_telegram(chat_id, f"⚠️ خطأ تقني في Firebase:\n`{str(e)}`")
-    
+                print(f"Error: {e}")
+
     return "ok", 200
 
 if __name__ == "__main__":

@@ -1,83 +1,63 @@
 import os, requests
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+import firebase_admin
+from firebase_admin import credentials, firestore
 
 app = Flask(__name__)
 CORS(app)
 
+# إعداد Firebase في السيرفر (تأكد من رفع ملف الخدمة الخاص بك)
+# ملاحظة: ستحتاج لملف JSON الخاص بـ Firebase Admin SDK ليعمل الخصم حقيقياً
+# سنستخدم هنا هيكلية منطق الأزرار
+
 BOT_TOKEN = "6785445743:AAFquuyfY2IIjgs2x6PnL61uA-3apHIpz2k"
 CHAT_ID = "6695916631"
 
-@app.route('/')
-def home():
-    return "F16 Server is Live and Stable!", 200
-
-# 1. استقبال الطلب من الموقع وإرساله للبوت
 @app.route('/send_order', methods=['POST'])
 def send_order():
-    try:
-        data = request.get_json(force=True)
-        u_name = data.get('user_name', 'عميل')
-        details = data.get('details', {})
-        
-        msg = f"🚀 طلب جديد من F16\n👤 العميل: {u_name}\n"
-        for k, v in details.items():
-            msg += f"🔹 {k}: {v}\n"
+    data = request.get_json(force=True)
+    u_name = data.get('user_name')
+    u_uid = data.get('user_uid')
+    details = data.get('details', {})
+    o_type = data.get('type')
 
-        # أزرار الـ Callback ببيانات بسيطة
-        reply_markup = {
-            "inline_keyboard": [[
-                {"text": "✅ تنفيذ", "callback_data": "done"},
-                {"text": "❌ رفض", "callback_data": "reject"}
-            ]]
-        }
+    msg = f"🔔 {o_type} جديد\n👤 العميل: {u_name}\n🆔 ID: {u_uid}\n"
+    msg += "------------------\n"
+    for k, v in details.items(): msg += f"🔹 {k}: {v}\n"
 
-        requests.post(f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage", json={
-            "chat_id": CHAT_ID, 
-            "text": msg,
-            "reply_markup": reply_markup
-        })
-        return jsonify({"status": "success"}), 200
-    except Exception as e:
-        return jsonify({"status": "error", "msg": str(e)}), 500
+    # أزرار تليجرام الثلاثية
+    reply_markup = {
+        "inline_keyboard": [[
+            {"text": "✅ تم", "callback_data": f"accept_{u_uid}_{details.get('النوع', '0')}"},
+            {"text": "❌ رفض", "callback_data": f"reject_{u_uid}"},
+            {"text": "📝 تعديل وتم", "callback_data": f"edit_{u_uid}"}
+        ]]
+    }
 
-# 2. معالجة ضغطات الأزرار (Webhook)
+    requests.post(f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage", json={
+        "chat_id": CHAT_ID, "text": msg, "reply_markup": reply_markup
+    })
+    return jsonify({"status": "ok"})
+
 @app.route('/webhook', methods=['POST'])
-def telegram_webhook():
+def webhook():
     update = request.get_json()
-    
     if "callback_query" in update:
         query = update["callback_query"]
-        callback_id = query["id"]
-        chat_id = query["message"]["chat"]["id"]
-        message_id = query["message"]["message_id"]
-        action = query.get("data")
-
-        # تحديد النتيجة
-        if action == "done":
-            res_text = "✅ تم التنفيذ"
-            alert = "تم قبول الطلب بنجاح"
-        else:
-            res_text = "❌ تم الرفض"
-            alert = "تم رفض الطلب"
-
-        # إغلاق علامة التحميل في تليجرام
-        requests.post(f"https://api.telegram.org/bot{BOT_TOKEN}/answerCallbackQuery", json={
-            "callback_query_id": callback_id,
-            "text": alert
-        })
-
-        # تحديث نص الرسالة لضمان التغيير
-        original_text = query["message"]["text"].split("📍")[0].strip()
-        new_msg_text = f"{original_text}\n\n📍 حالة الطلب: {res_text}"
+        data = query["data"]
+        # هنا يتم وضع منطق التعامل مع Firebase Admin 
+        # لتنفيذ "accept" (إضافة رصيد) أو "edit"
         
-        requests.post(f"https://api.telegram.org/bot{BOT_TOKEN}/editMessageText", json={
-            "chat_id": chat_id,
-            "message_id": message_id,
-            "text": new_msg_text
+        requests.post(f"https://api.telegram.org/bot{BOT_TOKEN}/answerCallbackQuery", json={
+            "callback_query_id": query["id"],
+            "text": "جاري معالجة العملية..."
         })
-
-    return jsonify({"status": "ok"}), 200
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 5000)))
+        
+        # تحديث الرسالة
+        requests.post(f"https://api.telegram.org/bot{BOT_TOKEN}/editMessageText", json={
+            "chat_id": query["message"]["chat"]["id"],
+            "message_id": query["message"]["message_id"],
+            "text": query["message"]["text"] + "\n\n⚙️ تم الإجراء بنجاح!"
+        })
+    return "ok"

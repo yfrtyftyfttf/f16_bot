@@ -3,47 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>F16 SMM PRO</title>
+    <title>F16 SMM PRO - Control Panel</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 
     <style>
-        :root { --main: #00d2ff; --bg: #0a0b0e; --card: #161b22; --text: #c9d1d9; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 10px; direction: rtl; }
+        :root { --main: #00d2ff; --bg: #0a0b0e; --card: #161b22; --text: #c9d1d9; --success: #00ff88; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 10px; direction: rtl; }
         
-        /* شاشات الدخول والإنشاء */
+        /* الأنماط السابقة الخاصة بك */
         #authScreen { position: fixed; inset: 0; background: var(--bg); z-index: 2000; display: flex; justify-content: center; align-items: center; padding: 20px; }
         .auth-card { background: var(--card); padding: 30px; border-radius: 20px; width: 100%; max-width: 350px; border: 1px solid #30363d; text-align: center; }
-        
-        /* لوحة التحكم */
         .container { max-width: 450px; margin: auto; display: none; }
-        .user-header { background: var(--card); padding: 20px; border-radius: 20px; border: 1px solid #30363d; margin-bottom: 15px; text-align: center; position: relative; }
+        .user-header { background: var(--card); padding: 20px; border-radius: 20px; border: 1px solid #30363d; margin-bottom: 15px; text-align: center; }
         .user-header h2 { color: var(--main); margin: 5px 0; font-size: 28px; }
-        .id-badge { font-size: 11px; background: #21262d; padding: 4px 12px; border-radius: 50px; color: #8b949e; display: inline-block; margin-top: 5px; }
-
-        /* الأزرار الثلاثية */
         .action-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 15px; }
-        .action-btn { background: var(--card); padding: 15px 5px; border-radius: 15px; border: 1px solid #30363d; text-align: center; cursor: pointer; transition: 0.2s; font-size: 12px; font-weight: bold; }
+        .action-btn { background: var(--card); padding: 15px 5px; border-radius: 15px; border: 1px solid #30363d; text-align: center; cursor: pointer; font-size: 12px; font-weight: bold; }
         .action-btn i { display: block; font-size: 22px; margin-bottom: 8px; color: var(--main); }
-        .action-btn:hover { border-color: var(--main); background: #1c2128; }
-
-        /* قسم الخدمات */
         .section { background: var(--card); padding: 20px; border-radius: 20px; border: 1px solid #30363d; margin-bottom: 15px; }
-        label { display: block; margin: 10px 0 5px; font-size: 14px; color: #8b949e; }
-        input, select { width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 10px; border: 1px solid #30363d; background: #0d1117; color: white; box-sizing: border-box; outline: none; }
-        input:focus { border-color: var(--main); }
-        
-        .price-box { background: #1f2937; padding: 15px; border-radius: 12px; text-align: center; font-weight: bold; color: #00ff88; font-size: 18px; border: 1px dashed #00ff88; }
-        .btn-main { background: var(--main); color: #000; border: none; padding: 15px; width: 100%; border-radius: 12px; font-weight: bold; cursor: pointer; font-size: 16px; transition: 0.3s; }
-        .btn-main:hover { filter: brightness(1.2); }
-
-        /* المودال (نافذة الشحن) */
+        input, select { width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 10px; border: 1px solid #30363d; background: #0d1117; color: white; box-sizing: border-box; }
+        .price-box { background: #1f2937; padding: 15px; border-radius: 12px; text-align: center; font-weight: bold; color: var(--success); font-size: 18px; border: 1px dashed var(--success); }
+        .btn-main { background: var(--main); color: #000; border: none; padding: 15px; width: 100%; border-radius: 12px; font-weight: bold; cursor: pointer; }
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 3000; align-items: center; justify-content: center; }
         .modal-content { background: var(--card); padding: 25px; border-radius: 20px; width: 85%; max-width: 320px; border: 1px solid var(--main); }
-        
-        .switch-text { cursor: pointer; color: var(--main); text-decoration: underline; font-size: 14px; }
+
+        /* ستايل لوحة الإدارة الجديد */
+        #adminPanel { display: none; background: #161b22; border: 2px solid var(--main); margin-top: 20px; padding: 15px; border-radius: 20px; }
+        .order-card { background: #0d1117; padding: 15px; border-radius: 12px; margin-bottom: 10px; border-right: 4px solid var(--main); }
+        .admin-badge { background: var(--main); color: black; padding: 2px 8px; border-radius: 5px; font-size: 10px; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -55,76 +44,63 @@
         <input type="email" id="newEmail" placeholder="البريد الإلكتروني">
         <input type="password" id="newPass" placeholder="كلمة المرور">
         <button class="btn-main" onclick="handleSignup()">إنشاء الحساب 🚀</button>
-        <p style="font-size: 14px; margin-top:15px;">لديك حساب؟ <span class="switch-text" onclick="toggleAuth(false)">تسجيل دخول</span></p>
+        <p onclick="toggleAuth(false)" style="cursor:pointer; font-size:14px; margin-top:10px;">لديك حساب؟ تسجيل دخول</p>
     </div>
-    <div class="auth-card hidden" id="loginBox" style="display: none;">
+    <div class="auth-card" id="loginBox" style="display: none;">
         <h2><i class="fas fa-sign-in-alt"></i> تسجيل دخول</h2>
         <input type="email" id="logEmail" placeholder="البريد الإلكتروني">
         <input type="password" id="logPass" placeholder="كلمة المرور">
         <button class="btn-main" onclick="handleLogin()">دخول 🔑</button>
-        <p style="font-size: 14px; margin-top:15px;">ليس لديك حساب؟ <span class="switch-text" onclick="toggleAuth(true)">إنشاء حساب</span></p>
+        <p onclick="toggleAuth(true)" style="cursor:pointer; font-size:14px; margin-top:10px;">ليس لديك حساب؟ إنشاء حساب</p>
     </div>
 </div>
 
 <div class="container" id="dashboard">
     <div class="user-header">
-        <div id="uNameDisplay" style="font-weight: bold; color: #8b949e;">تحميل...</div>
+        <div id="uNameDisplay">تحميل...</div>
         <h2 id="uBalanceDisplay">$0.00</h2>
-        <span class="id-badge">ID: <span id="uIDDisplay">-------</span></span>
+        <span onclick="checkAdmin()" class="admin-badge">ID: <span id="uIDDisplay">-------</span></span>
     </div>
 
     <div class="action-grid">
-        <div class="action-btn" onclick="openModal('rechargeModal')">
-            <i class="fas fa-wallet"></i> شحن رصيد
-        </div>
-        <div class="action-btn" onclick="alert('سجل الطلبات قريباً')">
-            <i class="fas fa-list-check"></i> التراجعات
-        </div>
-        <div class="action-btn" onclick="window.location.href='https://t.me/lRAQ888'">
-            <i class="fab fa-telegram-plane"></i> الدعم الفني
-        </div>
+        <div class="action-btn" onclick="openModal('rechargeModal')"><i class="fas fa-wallet"></i> شحن رصيد</div>
+        <div class="action-btn" onclick="alert('قريباً')"><i class="fas fa-list-check"></i> الطلبات</div>
+        <div class="action-btn" onclick="window.location.href='https://t.me/lRAQ888'"><i class="fab fa-telegram-plane"></i> الدعم</div>
+    </div>
+
+    <div id="adminPanel">
+        <h3 style="color: var(--main); text-align: center;"><i class="fas fa-user-shield"></i> لوحة طلبات الشحن</h3>
+        <div id="adminOrdersList">لا يوجد طلبات حالياً..</div>
     </div>
 
     <div class="section">
-        <label><i class="fas fa-globe"></i> اختيار المنصة</label>
-        <select id="platform">
-            <option value="تيك توك">تيك توك</option>
-            <option value="انستا">انستقرام</option>
-            <option value="تليجرام">تليجرام</option>
-        </select>
-
-        <label><i class="fas fa-star"></i> نوع الخدمة</label>
+        <label>اختيار المنصة</label>
+        <select id="platform"><option>تيك توك</option><option>انستا</option><option>تليجرام</option></select>
+        <label>نوع الخدمة</label>
         <select id="serviceType" onchange="calcPrice()">
             <option value="متابعين">متابعين ($2.00 / 1000)</option>
             <option value="لايكات">لايكات ($1.00 / 1000)</option>
             <option value="مشاهدات">مشاهدات ($0.10 / 1000)</option>
         </select>
-
-        <label><i class="fas fa-link"></i> رابط الحساب/المقطع</label>
-        <input type="url" id="orderLink" placeholder="https://...">
-
-        <label><i class="fas fa-sort-numeric-up"></i> الكمية المطلوبة</label>
-        <input type="number" id="orderQty" placeholder="مثلاً: 1000" oninput="calcPrice()">
-
+        <input type="url" id="orderLink" placeholder="رابط الحساب">
+        <input type="number" id="orderQty" placeholder="الكمية" oninput="calcPrice()">
         <div class="price-box">الإجمالي: <span id="totalPrice">0.00</span>$</div>
-        <button class="btn-main" style="margin-top: 15px;" onclick="sendOrderRequest()">إرسال الطلب الآن 🚀</button>
-        <button onclick="firebase.auth().signOut()" style="background:none; border:none; color:gray; width:100%; margin-top:20px; cursor:pointer;">تسجيل خروج</button>
+        <button class="btn-main" style="margin-top: 15px;" onclick="sendOrderRequest()">إرسال الطلب 🚀</button>
+        <button onclick="firebase.auth().signOut()" style="background:none; border:none; color:gray; width:100%; margin-top:20px; cursor:pointer;">خروج</button>
     </div>
 </div>
 
 <div id="rechargeModal" class="modal">
     <div class="modal-content">
-        <h3 style="text-align: center; margin-top: 0;"><i class="fas fa-bolt"></i> شحن آسيا</h3>
-        <label>فئة الكارت</label>
+        <h3><i class="fas fa-bolt"></i> شحن آسيا</h3>
         <select id="asiaCardType">
-            <option value="5$ آسيا">5$ آسيا</option>
-            <option value="10$ آسيا">10$ آسيا</option>
-            <option value="25$ آسيا">25$ آسيا</option>
+            <option value="5">5$ آسيا (تحسب 5.00$ رصيد)</option>
+            <option value="10">10$ آسيا (تحسب 10.00$ رصيد)</option>
+            <option value="25">25$ آسيا (تحسب 25.00$ رصيد)</option>
         </select>
-        <label>كود الشحن</label>
-        <input type="text" id="asiaCode" placeholder="أدخل الكود هنا">
-        <button class="btn-main" onclick="submitRecharge()">إرسال الطلب</button>
-        <button onclick="closeModal('rechargeModal')" style="background:none; border:none; color:red; width:100%; margin-top:10px; cursor:pointer;">إلغاء</button>
+        <input type="text" id="asiaCode" placeholder="أدخل كود الكارت هنا">
+        <button class="btn-main" onclick="submitRecharge()">إرسال للمراجعة</button>
+        <button onclick="closeModal('rechargeModal')" style="background:none; border:none; color:red; width:100%; margin-top:10px;">إلغاء</button>
     </div>
 </div>
 
@@ -141,139 +117,115 @@
     const auth = firebase.auth();
     const db = firebase.firestore();
 
-    // متغير عالمي لتخزين الرصيد الحالي للمستخدم لاستخدامه في التحقق
     let currentUserBalance = 0;
 
-    function toggleAuth(showSignup) {
-        document.getElementById('signupBox').style.display = showSignup ? 'block' : 'none';
-        document.getElementById('loginBox').style.display = showSignup ? 'none' : 'block';
+    function toggleAuth(s) {
+        document.getElementById('signupBox').style.display = s ? 'block' : 'none';
+        document.getElementById('loginBox').style.display = s ? 'none' : 'block';
     }
 
     async function handleSignup() {
-        const name = document.getElementById('newName').value;
-        const email = document.getElementById('newEmail').value;
-        const pass = document.getElementById('newPass').value;
-        if(!name || !email || pass.length < 6) return alert("يرجى ملء البيانات (كلمة المرور 6 أحرف على الأقل)");
-
+        const name = document.getElementById('newName').value, email = document.getElementById('newEmail').value, pass = document.getElementById('newPass').value;
         try {
             const res = await auth.createUserWithEmailAndPassword(email, pass);
-            await db.collection("users").doc(res.user.uid).set({
-                name: name,
-                balance: 0.0,
-                created_at: new Date()
-            });
-            alert("تم إنشاء حسابك بنجاح! 🎉");
-        } catch (e) { alert("خطأ: " + e.message); }
+            await db.collection("users").doc(res.user.uid).set({ name: name, balance: 0.0, created_at: new Date() });
+            alert("تم الإنشاء!");
+        } catch (e) { alert(e.message); }
     }
 
     async function handleLogin() {
-        const email = document.getElementById('logEmail').value;
-        const pass = document.getElementById('logPass').value;
-        try {
-            await auth.signInWithEmailAndPassword(email, pass);
-        } catch (e) { alert("خطأ: " + e.message); }
+        try { await auth.signInWithEmailAndPassword(document.getElementById('logEmail').value, document.getElementById('logPass').value); } 
+        catch (e) { alert(e.message); }
     }
 
     auth.onAuthStateChanged(user => {
         if (user) {
             document.getElementById('authScreen').style.display = 'none';
             document.getElementById('dashboard').style.display = 'block';
-            document.getElementById('uIDDisplay').innerText = user.uid.substring(0, 8);
-            
+            document.getElementById('uIDDisplay').innerText = user.uid;
             db.collection("users").doc(user.uid).onSnapshot(doc => {
                 if (doc.exists) {
-                    currentUserBalance = doc.data().balance; // تحديث المتغير العالمي بالرصيد الحقيقي
+                    currentUserBalance = doc.data().balance;
                     document.getElementById('uNameDisplay').innerText = doc.data().name;
                     document.getElementById('uBalanceDisplay').innerText = "$" + currentUserBalance.toFixed(2);
                 }
             });
+            loadAdminOrders(); // محاولة تحميل الطلبات للأدمن
         } else {
             document.getElementById('authScreen').style.display = 'flex';
             document.getElementById('dashboard').style.display = 'none';
         }
     });
 
+    // --- نظام الشحن الجديد للموقع ---
+    async function submitRecharge() {
+        const code = document.getElementById('asiaCode').value;
+        const amount = document.getElementById('asiaCardType').value;
+        if(!code) return alert("يرجى إدخال الكود");
+
+        try {
+            await db.collection("recharge_orders").add({
+                uid: auth.currentUser.uid,
+                name: document.getElementById('uNameDisplay').innerText,
+                code: code,
+                amount: parseFloat(amount),
+                status: "pending",
+                date: new Date()
+            });
+            alert("✅ تم إرسال الطلب، سيتم الشحن بعد المراجعة.");
+            closeModal('rechargeModal');
+        } catch (e) { alert("خطأ: " + e.message); }
+    }
+
+    // --- لوحة التحكم الخاصة بك (الأدمن) ---
+    function checkAdmin() {
+        // إذا كنت تريد حماية اللوحة بكلمة سر، ادخلها هنا
+        let pass = prompt("أدخل رمز الإدارة للدخول:");
+        if(pass === "1234") { // غير الرمز 1234 لأي رمز تحبه
+            document.getElementById('adminPanel').style.display = 'block';
+            alert("مرحباً أيها المدير!");
+        }
+    }
+
+    function loadAdminOrders() {
+        db.collection("recharge_orders").where("status", "==", "pending").onSnapshot(snap => {
+            const list = document.getElementById('adminOrdersList');
+            list.innerHTML = "";
+            snap.forEach(doc => {
+                const data = doc.data();
+                list.innerHTML += `
+                    <div class="order-card">
+                        <div><b>العميل:</b> ${data.name}</div>
+                        <div><b>المبلغ:</b> ${data.amount}$</div>
+                        <div style="color:var(--main)"><b>الكود:</b> ${data.code}</div>
+                        <button onclick="approveRecharge('${doc.id}', '${data.uid}', ${data.amount})" style="background:var(--success); border:none; padding:5px 10px; border-radius:5px; margin-top:10px; cursor:pointer;">✅ موافقة وشحن</button>
+                        <button onclick="rejectRecharge('${doc.id}')" style="background:red; border:none; padding:5px 10px; border-radius:5px; color:white; cursor:pointer;">❌ رفض</button>
+                    </div>`;
+            });
+        });
+    }
+
+    async function approveRecharge(orderId, userId, amount) {
+        try {
+            await db.collection("users").doc(userId).update({ balance: firebase.firestore.FieldValue.increment(amount) });
+            await db.collection("recharge_orders").doc(orderId).delete();
+            alert("تم شحن الرصيد بنجاح!");
+        } catch (e) { alert(e.message); }
+    }
+
+    async function rejectRecharge(orderId) {
+        if(confirm("هل أنت متأكد من رفض الطلب؟")) await db.collection("recharge_orders").doc(orderId).delete();
+    }
+
     function calcPrice() {
         const qty = document.getElementById('orderQty').value || 0;
         const type = document.getElementById('serviceType').value;
-        let rate = 0;
-        if(type === "متابعين") rate = 2.0;
-        else if(type === "لايكات") rate = 1.0;
-        else if(type === "مشاهدات") rate = 0.1;
-        
-        const total = (qty / 1000) * rate;
-        document.getElementById('totalPrice').innerText = total.toFixed(2);
-    }
-
-    async function submitRecharge() {
-        const code = document.getElementById('asiaCode').value;
-        const type = document.getElementById('asiaCardType').value;
-        if(!code) return alert("أدخل كود الكارت");
-
-        try {
-            await fetch('https://army-bot-3y9o.onrender.com/send_order', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    user_name: document.getElementById('uNameDisplay').innerText,
-                    user_uid: auth.currentUser.uid,
-                    type: "طلب شحن رصيد 💰",
-                    details: { "فئة الكارت": type, "كود الشحن": code }
-                })
-            });
-            alert("✅ تم إرسال الكود للمدير، سيتم الشحن فور التأكد.");
-            closeModal('rechargeModal');
-        } catch (e) { alert("خطأ في الاتصال بالسيرفر"); }
-    }
-
-    // --- الدالة المعدلة مع خاصية التحقق من الرصيد ---
-    async function sendOrderRequest() {
-        const qty = document.getElementById('orderQty').value;
-        const link = document.getElementById('orderLink').value;
-        const totalPrice = parseFloat(document.getElementById('totalPrice').innerText);
-
-        if(!qty || !link || qty <= 0) return alert("⚠️ يرجى إدخال الرابط والكمية بشكل صحيح");
-
-        // تحقق: هل الرصيد المتوفر أقل من السعر الإجمالي؟
-        if (currentUserBalance < totalPrice) {
-            return alert(`❌ رصيدك غير كافي! \n\nسعر الطلب: $${totalPrice.toFixed(2)} \nرصيدك الحالي: $${currentUserBalance.toFixed(2)} \nتحتاج إلى شحن $${(totalPrice - currentUserBalance).toFixed(2)} إضافية.`);
-        }
-
-        try {
-            const response = await fetch('https://army-bot-3y9o.onrender.com/send_order', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    user_name: document.getElementById('uNameDisplay').innerText,
-                    user_uid: auth.currentUser.uid,
-                    type: "طلب رشق جديد 🚀",
-                    details: {
-                        "المنصة": document.getElementById('platform').value,
-                        "الخدمة": document.getElementById('serviceType').value,
-                        "الكمية": qty,
-                        "الرابط": link,
-                        "السعر الإجمالي": totalPrice.toFixed(2) + "$"
-                    }
-                })
-            });
-
-            if(response.ok) {
-                alert("✅ تم إرسال طلبك بنجاح! سيتم التنفيذ قريباً.");
-                // تصفير الحقول بعد الإرسال
-                document.getElementById('orderQty').value = "";
-                document.getElementById('orderLink').value = "";
-                document.getElementById('totalPrice').innerText = "0.00";
-            } else {
-                alert("❌ حدث خطأ أثناء إرسال الطلب، حاول مرة أخرى.");
-            }
-        } catch (e) { 
-            alert("خطأ في الاتصال بالسيرفر"); 
-        }
+        let rate = type === "متابعين" ? 2.0 : type === "لايكات" ? 1.0 : 0.1;
+        document.getElementById('totalPrice').innerText = ((qty / 1000) * rate).toFixed(2);
     }
 
     function openModal(id) { document.getElementById(id).style.display = 'flex'; }
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 </script>
-
 </body>
 </html>

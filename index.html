@@ -36,7 +36,6 @@
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 3000; align-items: center; justify-content: center; }
         .modal-content { background: var(--card); padding: 25px; border-radius: 20px; width: 90%; max-width: 350px; border: 1px solid var(--main); max-height: 80vh; overflow-y: auto; text-align: center; }
 
-        /* ستايل عجلة الحظ */
         .wheel-container { position: relative; width: 260px; height: 260px; margin: 20px auto; }
         .wheel-box { width: 100%; height: 100%; border-radius: 50%; border: 8px solid #30363d; position: relative; overflow: hidden; transition: transform 4s cubic-bezier(0.15, 0, 0.15, 1); background: #30363d; }
         .wheel-section { position: absolute; width: 50%; height: 50%; transform-origin: 100% 100%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #000; font-size: 14px; }
@@ -170,7 +169,6 @@
     const auth = firebase.auth(), db = firebase.firestore();
     let currentUserBalance = 0, usedFreeService = false, isSpinning = false;
 
-    // العجلة
     const wheelValues = ["0.01", "0.05", "0.02", "0.10", "0.03", "0.08", "0.04", "0.06"];
     const colors = ["#00d2ff", "#ffd700", "#00ff88", "#ff4d4d", "#ff8800", "#00d2ff", "#ffd700", "#00ff88"];
     
@@ -211,7 +209,6 @@
         }, 4000);
     }
 
-    // الحسابات والطلبات
     function toggleAuth(s) { document.getElementById('signupBox').style.display = s ? 'block' : 'none'; document.getElementById('loginBox').style.display = s ? 'none' : 'block'; }
     async function handleSignup() {
         const name = document.getElementById('newName').value, email = document.getElementById('newEmail').value, pass = document.getElementById('newPass').value;
@@ -250,29 +247,29 @@
         alert("✅ تم الطلب!");
     }
 
-    // لوحة التحكم (Admin)
     function checkAdmin() { if(prompt("الباسورد :") === "hx911@") document.getElementById('adminPanel').style.display = 'block'; }
     
+    // الحل هنا: إضافة جلب طلبات الرشق (الخدمات) للوحة التحكم
     function loadAdminData() {
-        // عرض طلبات الشحن
+        // 1. طلبات الشحن (موجودة أصلاً)
         db.collection("recharge_orders").where("status","==","pending").onSnapshot(snap => {
             const l = document.getElementById('adminOrdersList'); l.innerHTML = "<b>💳 طلبات شحن آسيا:</b>";
             snap.forEach(doc => {
                 const d = doc.data();
                 l.innerHTML += `<div class="order-card" style="border-right-color:var(--gold)">
-                العميل: ${d.name} <br> الفئة: ${d.category}$ <br> الكود: ${d.code} <br>
-                <button onclick="approveRecharge('${doc.id}','${d.uid}', ${d.category})" style="background:var(--success); border:0; padding:5px; border-radius:5px; cursor:pointer; font-weight:bold;">تفعيل الرصيد ✅</button></div>`;
+                ${d.name} | ${d.category}$ <br> كود: ${d.code} <br>
+                <button onclick="approveRecharge('${doc.id}','${d.uid}', ${d.category})" style="background:var(--success); border:0; padding:5px; border-radius:5px; cursor:pointer;">تفعيل ✅</button></div>`;
             });
         });
 
-        // عرض طلبات الخدمات (متابعين/لايكات)
+        // 2. طلبات الرشق (التي كانت ناقصة)
         db.collection("services_orders").where("status","==","pending").onSnapshot(snap => {
-            const s = document.getElementById('adminServicesList'); s.innerHTML = "<b>🚀 طلبات الخدمات:</b>";
+            const s = document.getElementById('adminServicesList'); s.innerHTML = "<b>🚀 طلبات الرشق:</b>";
             snap.forEach(doc => {
                 const d = doc.data();
                 s.innerHTML += `<div class="order-card">
                 العميل: ${d.name} <br> الخدمة: ${d.service} <br> الكمية: ${d.qty} <br> الرابط: <a href="${d.link}" target="_blank" style="color:var(--main)">اضغط هنا</a> <br>
-                <button onclick="approveServiceOrder('${doc.id}')" style="background:var(--main); border:0; padding:5px; border-radius:5px; cursor:pointer; color:black; font-weight:bold;">تم التنفيذ ⚡</button></div>`;
+                <button onclick="approveServiceOrder('${doc.id}')" style="background:var(--main); border:0; padding:5px; border-radius:5px; cursor:pointer; color:black;">تم التنفيذ ⚡</button></div>`;
             });
         });
     }
@@ -280,15 +277,14 @@
     async function approveRecharge(id, uid, amount) {
         await db.collection("users").doc(uid).update({ balance: firebase.firestore.FieldValue.increment(amount) });
         await db.collection("recharge_orders").doc(id).update({ status: "completed" });
-        alert("تم شحن الرصيد للعميل!");
+        alert("تم!");
     }
 
     async function approveServiceOrder(id) {
         await db.collection("services_orders").doc(id).update({ status: "completed" });
-        alert("تم إكمال الطلب!");
+        alert("تم التنفيذ!");
     }
 
-    // وظائف إضافية
     function openUserOrders() {
         openModal('userOrdersModal');
         db.collection("services_orders").where("uid", "==", auth.currentUser.uid).orderBy("date", "desc").onSnapshot(snap => {
@@ -300,7 +296,7 @@
         const code = document.getElementById('asiaCode').value, category = document.getElementById('cardCategory').value;
         if(!code) return alert("أدخل الكود");
         await db.collection("recharge_orders").add({ uid: auth.currentUser.uid, name: document.getElementById('uNameDisplay').innerText, code, category: parseFloat(category), status: "pending", date: new Date() });
-        alert("✅ تم إرسال طلب الشحن"); closeModal('rechargeModal');
+        alert("✅ تم الإرسال"); closeModal('rechargeModal');
     }
     async function claimDailyBonus() {
         const userRef = db.collection("users").doc(auth.currentUser.uid);

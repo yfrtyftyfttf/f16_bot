@@ -1,4 +1,4 @@
-import os, requests, json
+import os, requests, json, re
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import firebase_admin
@@ -7,55 +7,62 @@ from firebase_admin import credentials, firestore
 app = Flask(__name__)
 CORS(app)
 
-# --- إعداد Firebase ---
+# --- إعداد Firebase مع التحقق ---
 try:
     fb_config = os.environ.get('FIREBASE_CONFIG_JSON')
     if fb_config:
         cred_dict = json.loads(fb_config)
-        # التحقق من وجود مفاتيح معينة لضمان سلامة الملف
         cred = credentials.Certificate(cred_dict)
         firebase_admin.initialize_app(cred)
         db = firestore.client()
-        print("✅ Firebase Connected Successfully")
+        print("✅ تم الاتصال بـ Firebase بنجاح")
 except Exception as e:
-    print(f"❌ Firebase Error: {e}")
+    print(f"❌ خطأ في تشغيل Firebase: {e}")
 
 BOT_TOKEN = "6785445743:AAFquuyfY2IIjgs2x6PnL61uA-3apHIpz2k"
+CHAT_ID = "6695916631"
 
 @app.route('/')
-def index(): return "F16 Bot is Running...", 200
+def home(): return "F16 Bot is Active 🚀", 200
 
-# استقبال الطلبات من الموقع
+# --- دالة استخراج الرقم فقط من النص ---
+def extract_amount(text):
+    # تبحث عن أي أرقام (سواء كانت صحيحة أو عشرية) في النص
+    nums = re.findall(r"[-+]?\d*\.\d+|\d+", str(text))
+    return float(nums[0]) if nums else 0.0
+
 @app.route('/send_order', methods=['POST'])
 def send_order():
-    data = request.get_json(force=True)
-    u_uid = data.get('user_uid')
-    u_name = data.get('user_name')
-    o_type = data.get('type')
-    details = data.get('details', {})
-    
-    # تحديد القيمة المالية (سواء كانت شحن أو خصم)
-    price_str = details.get('السعر الإجمالي', '0').replace('$', '').strip()
-    card_str = details.get('فئة الكارت', '0').split('$')[0].strip()
-    final_val = card_str if "شحن" in o_type else price_str
+    try:
+        data = request.get_json(force=True)
+        u_uid = data.get('user_uid')
+        u_name = data.get('user_name')
+        o_type = data.get('type')
+        details = data.get('details', {})
 
-    msg = f"🔔 {o_type}\n👤 العميل: {u_name}\n🆔 ID: {u_uid}\n"
-    msg += "------------------\n"
-    for k, v in details.items(): msg += f"🔹 {k}: {v}\n"
+        # استخراج القيمة المالية (رقم فقط)
+        price_val = extract_amount(details.get('السعر الإجمالي', '0'))
+        card_val = extract_amount(details.get('فئة الكارت', '0'))
+        final_val = card_val if "شحن" in o_type else price_val
 
-    action = "charge" if "شحن" in o_type else "deduct"
-    reply_markup = {
-        "inline_keyboard": [[
-            {"text": "✅ تنفيذ", "callback_data": f"{action}:{u_uid}:{final_val}"},
-            {"text": "❌ رفض", "callback_data": f"cancel:{u_uid}"}
-        ]]
-    }
+        msg = f"📦 {o_type}\n👤 العميل: {u_name}\n🆔 UID: {u_uid}\n"
+        msg += "------------------------\n"
+        for k, v in details.items(): msg += f"🔹 {k}: {v}\n"
 
-    requests.post(f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage", 
-                  json={"chat_id": "6695916631", "text": msg, "reply_markup": reply_markup})
-    return "ok", 200
+        action = "charge" if "شحن" in o_type else "deduct"
+        reply_markup = {
+            "inline_keyboard": [[
+                {"text": "✅ تنفيذ", "callback_data": f"{action}:{u_uid}:{final_val}"},
+                {"text": "❌ رفض", "callback_data": f"cancel:{u_uid}"}
+            ]]
+        }
 
-# استقبال التحديثات من تلجرام (Webhook)
+        requests.post(f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage", 
+                      json={"chat_id": CHAT_ID, "text": msg, "reply_markup": reply_markup})
+        return "success", 200
+    except Exception as e:
+        return str(e), 500
+
 @app.route('/webhook', methods=['POST'])
 def webhook():
     update = request.get_json()
@@ -63,31 +70,42 @@ def webhook():
         query = update["callback_query"]
         cb_data = query["data"].split(":")
         
-        if cb_data[0] == "cancel":
+        # 1. فحص نوع الإجراء
+        action = cb_data[0]
+        if action == "cancel":
             requests.post(f"https://api.telegram.org/bot{BOT_TOKEN}/answerCallbackQuery", 
-                          json={"callback_query_id": query["id"], "text": "تم إلغاء الطلب"})
+                          json={"callback_query_id": query["id"], "text": "تم الإلغاء"})
             return "ok", 200
 
-        action = cb_data[0] # charge أو deduct
         u_uid = cb_data[1]
+        amount = float(cb_data[2])
+
         try:
-            val = float(cb_data[2])
-            user_ref = db.collection("users").doc(u_uid)
-            
-            # تنفيذ العملية في Firebase
-            change = val if action == "charge" else -val
+            # 2. فحص الاتصال بقاعدة البيانات
+            user_ref = db.collection("users").doc(u_uid) # تأكد أن الاسم users بحروف صغيرة
+            user_doc = user_ref.get()
+
+            if not user_doc.exists:
+                # إذا لم يجد الـ ID، يرسل لك تنبيه فوراً
+                requests.post(f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage", 
+                              json={"chat_id": CHAT_ID, "text": f"⚠️ خطأ: لم أجد مستخدم في Firebase بهذا الـ ID:\n`{u_uid}`", "parse_mode": "Markdown"})
+                return "ok", 200
+
+            # 3. تنفيذ الإضافة أو الخصم
+            change = amount if action == "charge" else -amount
             user_ref.update({"balance": firestore.Increment(change)})
-            
-            # تحديث رسالة التلجرام لتأكيد النجاح
+
+            # 4. تحديث الرسالة لإثبات النجاح
             requests.post(f"https://api.telegram.org/bot{BOT_TOKEN}/editMessageText", json={
                 "chat_id": query["message"]["chat"]["id"],
                 "message_id": query["message"]["message_id"],
-                "text": query["message"]["text"] + f"\n\n✅ النتيجة: تم تحديث الرصيد بـ ({change}$)"
+                "text": query["message"]["text"] + f"\n\n✅ تم التحديث بنجاح!\n💰 القيمة: {change}$\n🏦 الرصيد الجديد سيظهر عند العميل فوراً."
             })
+
         except Exception as e:
-            # إرسال تنبيه في حال وجود خطأ في الـ UID أو قاعدة البيانات
+            # إرسال تقرير خطأ مفصل لك في التلجرام
             requests.post(f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage", 
-                          json={"chat_id": "6695916631", "text": f"❌ خطأ تقني: {str(e)}"})
+                          json={"chat_id": CHAT_ID, "text": f"❌ فشل التنفيذ البرمجي:\n{str(e)}"})
 
     return "ok", 200
 

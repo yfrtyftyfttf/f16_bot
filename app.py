@@ -10,9 +10,9 @@ CHAT_ID = "6695916631"
 
 @app.route('/')
 def home():
-    return "F16 Server is Active", 200
+    return "F16 Server is Live and Stable!", 200
 
-# إرسال الطلب للبوت
+# 1. استقبال الطلب من الموقع وإرساله للبوت
 @app.route('/send_order', methods=['POST'])
 def send_order():
     try:
@@ -20,11 +20,11 @@ def send_order():
         u_name = data.get('user_name', 'عميل')
         details = data.get('details', {})
         
-        msg = f"🚀 طلب جديد من F16\n👤 {u_name}\n"
+        msg = f"🚀 طلب جديد من F16\n👤 العميل: {u_name}\n"
         for k, v in details.items():
             msg += f"🔹 {k}: {v}\n"
 
-        # أزرار ببيانات واضحة وبسيطة
+        # أزرار الـ Callback ببيانات بسيطة
         reply_markup = {
             "inline_keyboard": [[
                 {"text": "✅ تنفيذ", "callback_data": "done"},
@@ -32,16 +32,16 @@ def send_order():
             ]]
         }
 
-        r = requests.post(f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage", json={
+        requests.post(f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage", json={
             "chat_id": CHAT_ID, 
             "text": msg,
             "reply_markup": reply_markup
         })
-        return jsonify({"status": "success", "tel_res": r.json()}), 200
+        return jsonify({"status": "success"}), 200
     except Exception as e:
         return jsonify({"status": "error", "msg": str(e)}), 500
 
-# استقبال ضغطات الأزرار
+# 2. معالجة ضغطات الأزرار (Webhook)
 @app.route('/webhook', methods=['POST'])
 def telegram_webhook():
     update = request.get_json()
@@ -51,33 +51,31 @@ def telegram_webhook():
         callback_id = query["id"]
         chat_id = query["message"]["chat"]["id"]
         message_id = query["message"]["message_id"]
-        data = query.get("data", "") # البيانات المخزنة في الزر
+        action = query.get("data")
 
-        # معالجة دقيقة بناءً على النص
-        if data == "done":
-            res_text = "✅ تم التنفيذ بنجاح"
-            alert = "تم التأكيد"
-        elif data == "reject":
-            res_text = "❌ تم رفض الطلب"
-            alert = "تم الرفض"
+        # تحديد النتيجة
+        if action == "done":
+            res_text = "✅ تم التنفيذ"
+            alert = "تم قبول الطلب بنجاح"
         else:
-            res_text = f"⚠️ بيانات غير متوقعة: {data}"
-            alert = "خطأ في البيانات"
+            res_text = "❌ تم الرفض"
+            alert = "تم رفض الطلب"
 
-        # إغلاق التحميل في تليجرام
+        # إغلاق علامة التحميل في تليجرام
         requests.post(f"https://api.telegram.org/bot{BOT_TOKEN}/answerCallbackQuery", json={
             "callback_query_id": callback_id,
             "text": alert
         })
 
-        # تحديث الرسالة
-        original = query["message"]["text"]
-        if "حالة" not in original:
-            requests.post(f"https://api.telegram.org/bot{BOT_TOKEN}/editMessageText", json={
-                "chat_id": chat_id,
-                "message_id": message_id,
-                "text": f"{original}\n\n📍 حالة الطلب: {res_text}"
-            })
+        # تحديث نص الرسالة لضمان التغيير
+        original_text = query["message"]["text"].split("📍")[0].strip()
+        new_msg_text = f"{original_text}\n\n📍 حالة الطلب: {res_text}"
+        
+        requests.post(f"https://api.telegram.org/bot{BOT_TOKEN}/editMessageText", json={
+            "chat_id": chat_id,
+            "message_id": message_id,
+            "text": new_msg_text
+        })
 
     return jsonify({"status": "ok"}), 200
 

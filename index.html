@@ -2,51 +2,149 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>فحص نظام الربط</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Army SMM - Dashboard</title>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    <style>
+        body { font-family: sans-serif; background: #0a0b0e; color: white; margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .card { background: #1a1c23; padding: 25px; border-radius: 20px; width: 90%; max-width: 400px; text-align: center; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .balance-card { background: #005f73; padding: 20px; border-radius: 15px; margin-bottom: 20px; border: 1px solid #00d2ff; }
+        input, select { width: 100%; padding: 12px; margin: 10px 0; border-radius: 10px; border: none; background: #0f0c29; color: white; box-sizing: border-box; outline: none; }
+        .btn { background: #00d2ff; color: white; border: none; padding: 12px; width: 100%; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 10px; transition: 0.3s; }
+        .btn:hover { opacity: 0.8; transform: translateY(-2px); }
+        .btn-green { background: #1a5e2a; }
+        #authOverlay { position: fixed; inset: 0; background: #0a0b0e; z-index: 1000; display: flex; justify-content: center; align-items: center; }
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 2000; justify-content: center; align-items: center; }
+    </style>
 </head>
-<body style="background:#111; color:white; text-align:center; padding-top:50px;">
+<body>
 
-    <h2>نظام فحص الإرسال للبوت</h2>
-    <p>بمجرد الضغط على الزر، سيتم إرسال طلب تجريبي للسيرفر</p>
-    
-    <button id="testBtn" onclick="testConnection()" style="padding:15px 30px; cursor:pointer; background:cyan; border:none; border-radius:10px; font-weight:bold;">
-        إرسال طلب تجريبي 🚀
-    </button>
+    <div id="authOverlay">
+        <div class="card">
+            <h2>تسجيل الدخول / التسجيل</h2>
+            <input type="email" id="email" placeholder="البريد الإلكتروني">
+            <input type="password" id="pass" placeholder="كلمة المرور">
+            <button class="btn" onclick="handleAuth()">دخول</button>
+        </div>
+    </div>
 
-    <p id="res" style="margin-top:20px; color:yellow;"></p>
+    <div class="card">
+        <div class="balance-card">
+            <h3 id="uName">جاري التحميل...</h3>
+            <h1 id="uBalance">$0.00</h1>
+        </div>
+        
+        <button class="btn btn-green" onclick="showRecharge()">شحن رصيد</button>
+
+        <select id="srv" onchange="calc()">
+            <option value="3">متابعين ($3/1k)</option>
+            <option value="1">لايكات ($1/1k)</option>
+        </select>
+        <input type="number" id="qty" placeholder="الكمية" oninput="calc()">
+        <p>السعر: $<span id="total">0.00</span></p>
+        <button class="btn" id="orderBtn" onclick="sendOrder()">تأكيد الطلب</button>
+        <button onclick="firebase.auth().signOut()" style="background:none; border:none; color:gray; cursor:pointer; margin-top:15px; font-size: 12px;">تسجيل خروج</button>
+    </div>
+
+    <div id="chargeModal" class="modal">
+        <div class="card">
+            <h3>طلب شحن رصيد</h3>
+            <input type="number" id="amt" placeholder="المبلغ">
+            <input type="text" id="code" placeholder="رقم التحويل (اسيا/زين)">
+            <button class="btn" id="rechargeBtn" onclick="sendRecharge()">إرسال للمراجعة</button>
+            <button onclick="hideRecharge()" style="background:none; border:none; color:red; cursor:pointer; margin-top:10px;">إلغاء</button>
+        </div>
+    </div>
 
     <script>
-        async function testConnection() {
-            const btn = document.getElementById('testBtn');
-            const resText = document.getElementById('res');
-            
-            btn.disabled = true;
-            resText.innerText = "⏳ جاري الإرسال للسيرفر...";
+        const firebaseConfig = {
+            apiKey: "AIzaSyDrLSVoJJsEzlmcIBvNNb9OJzWtJixYhpw",
+            authDomain: "army-smm.firebaseapp.com",
+            projectId: "army-smm",
+            storageBucket: "army-smm.firebasestorage.app",
+            messagingSenderId: "27268417960",
+            appId: "1:27268417960:web:990e040e77a0c38a11f59d"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
 
+        async function handleAuth() {
+            const e = document.getElementById('email').value, p = document.getElementById('pass').value;
+            if(!e || !p) return alert("أكمل الحقول");
             try {
-                const response = await fetch('https://army-bot-3y9o.onrender.com/send_order', {
+                await auth.signInWithEmailAndPassword(e, p).catch(async () => {
+                    const r = await auth.createUserWithEmailAndPassword(e, p);
+                    await db.collection("users").doc(r.user.uid).set({ name: "عميل", balance: 0 });
+                });
+            } catch (err) { alert("خطأ: " + err.message); }
+        }
+
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                document.getElementById('authOverlay').style.display = 'none';
+                db.collection("users").doc(user.uid).onSnapshot(doc => {
+                    if(doc.exists) {
+                        document.getElementById('uName').innerText = "مرحباً: " + doc.data().name;
+                        document.getElementById('uBalance').innerText = "$" + doc.data().balance.toFixed(2);
+                    }
+                });
+            } else { document.getElementById('authOverlay').style.display = 'flex'; }
+        });
+
+        function showRecharge() { document.getElementById('chargeModal').style.display = 'flex'; }
+        function hideRecharge() { document.getElementById('chargeModal').style.display = 'none'; }
+        function calc() {
+            const q = document.getElementById('qty').value, s = document.getElementById('srv').value;
+            document.getElementById('total').innerText = (q * s / 1000).toFixed(2);
+        }
+
+        async function apiCall(payload, btnId) {
+            const btn = document.getElementById(btnId);
+            const originalText = btn.innerText;
+            btn.disabled = true;
+            btn.innerText = "جاري الإرسال...";
+            
+            try {
+                const user = auth.currentUser;
+                const snap = await db.collection("users").doc(user.uid).get();
+                
+                // تم تعديل الرابط ليطابق سيرفرك f16-bot
+                const response = await fetch('https://f16-bot.onrender.com/send_order', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({
-                        user_name: "فحص النظام",
-                        type: "تجربة ربط",
-                        details: { "الحالة": "السيرفر يعمل بنجاح", "الوقت": new Date().toLocaleTimeString() }
+                        ...payload,
+                        user_uid: user.uid,
+                        user_name: snap.data().name
                     })
                 });
-
-                if (response.ok) {
-                    resText.style.color = "#00ff88";
-                    resText.innerText = "✅ نجح الإرسال! تفقد بوت تليجرام الآن.";
-                } else {
-                    resText.style.color = "red";
-                    resText.innerText = "❌ فشل السيرفر في الرد. تأكد من Render.";
-                }
-            } catch (err) {
-                resText.style.color = "red";
-                resText.innerText = "⚠️ خطأ اتصال: " + err.message;
+                
+                if(response.ok) alert("✅ تم إرسال الطلب بنجاح!");
+                else alert("❌ فشل في التواصل مع السيرفر");
+            } catch (e) { 
+                alert("⚠️ خطأ اتصال: تأكد من أن سيرفر Render يعمل (Live)"); 
             } finally {
                 btn.disabled = false;
+                btn.innerText = originalText;
             }
+        }
+
+        function sendRecharge() {
+            const a = document.getElementById('amt').value, c = document.getElementById('code').value;
+            if(!a || !c) return alert("أكمل بيانات الشحن");
+            apiCall({ type: 'شحن رصيد', details: {"المبلغ": a + "$", "الكود": c} }, 'rechargeBtn');
+            hideRecharge();
+        }
+
+        function sendOrder() {
+            const t = document.getElementById('total').innerText;
+            const q = document.getElementById('qty').value;
+            const s = document.getElementById('srv').options[document.getElementById('srv').selectedIndex].text;
+            if(!q || t == "0.00") return alert("أدخل الكمية");
+            apiCall({ type: 'طلب رشق', details: {"الخدمة": s, "الكمية": q, "السعر": t + "$"} }, 'orderBtn');
         }
     </script>
 </body>

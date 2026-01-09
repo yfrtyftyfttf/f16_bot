@@ -7,7 +7,7 @@ from firebase_admin import credentials, firestore
 app = Flask(__name__)
 CORS(app)
 
-# --- إعداد Firebase ---
+# إعداد Firebase
 try:
     fb_config = os.environ.get('FIREBASE_CONFIG_JSON')
     if fb_config:
@@ -27,68 +27,77 @@ def send_telegram(chat_id, text):
     payload = {"chat_id": chat_id, "text": text, "parse_mode": "Markdown"}
     return requests.post(url, json=payload)
 
+@app.route('/')
+def home(): return "Server is running", 200
+
 @app.route('/webhook', methods=['POST'])
 def webhook():
     update = request.get_json()
     if not update: return "ok", 200
 
-    # 1. البحث اليدوي عن العميل (عبر الرسائل)
+    # 1. معالجة البحث عن ID (رسالة نصية)
     if "message" in update:
-        chat_id = update["message"]["chat"]["id"]
-        text = update["message"].get("text", "").strip()
+        msg = update["message"]
+        chat_id = msg["chat"]["id"]
+        text = msg.get("text", "").strip()
+
         if len(text) > 5:
             user_ref = db.collection("users").doc(text).get()
             if user_ref.exists:
                 bal = user_ref.to_dict().get('balance', 0)
+                # إرسال بيانات العميل مع الأزرار
                 markup = {
                     "inline_keyboard": [
-                        [{"text": "✅ قبول وشحن 10$", "callback_data": f"act:accept:10:{text}"}],
-                        [{"text": "❌ رفض الطلب", "callback_data": f"act:reject:0:{text}"}]
+                        [{"text": "✅ قبول وشحن 10$", "callback_data": f"pay:accept:10:{text}"}],
+                        [{"text": "❌ رفض الطلب", "callback_data": f"pay:reject:0:{text}"}]
                     ]
                 }
-                send_telegram(chat_id, f"👤 عميل موجود\n💰 رصيده الحالي: {bal}$\n🆔 ID: `{text}`")
-                # إرسال الأزرار
+                send_telegram(chat_id, f"👤 *بيانات العميل وجدت:*\n💰 الرصيد الحالي: {bal}$\n🆔 ID: `{text}`")
                 requests.post(f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage", 
-                              json={"chat_id": chat_id, "text": "اختر الإجراء:", "reply_markup": markup})
+                              json={"chat_id": chat_id, "text": "اختر الإجراء المطلوب:", "reply_markup": markup})
+            else:
+                send_telegram(chat_id, "❌ لم يتم العثور على هذا الـ ID في قاعدة البيانات.")
 
-    # 2. معالجة أزرار التنفيذ والرفض (إرسال إشعار للعميل)
+    # 2. معالجة الأزرار (إيقاف التحميل وتحديث الرصيد)
     if "callback_query" in update:
         query = update["callback_query"]
-        data = query["data"].split(":") # [act, status, amount, uid]
+        q_id = query["id"] # معرف الطلب لإيقاف التحميل
+        chat_id = query["message"]["chat"]["id"]
         
+        # تقسيم البيانات: [العملية, الحالة, المبلغ, الـ ID]
+        data = query["data"].split(":")
         status = data[1]
         amount = float(data[2])
         u_uid = data[3]
-        
+
+        # فورا نوقف علامة التحميل في تليجرام
+        requests.post(f"https://api.telegram.org/bot{BOT_TOKEN}/answerCallbackQuery", 
+                      json={"callback_query_id": q_id, "text": "جاري المعالجة..."})
+
         try:
             if status == "accept":
-                # تحديث الرصيد في Firebase
-                db.collection("users").doc(u_uid).update({"balance": firestore.Increment(amount)})
+                # تحديث Firebase
+                user_ref = db.collection("users").doc(u_uid)
+                user_ref.update({"balance": firestore.Increment(amount)})
                 
-                # رسالة للمدير
-                requests.post(f"https://api.telegram.org/bot{BOT_TOKEN}/answerCallbackQuery", 
-                              json={"callback_query_id": query["id"], "text": "✅ تم الشحن وإبلاغ العميل"})
-                
-                # إشعار للعميل (الزبون)
-                send_telegram(u_uid, f"✅ *تم تنفيذ طلب الشحن الخاص بك!*\n💰 تم إضافة: `{amount}$` إلى رصيدك بنجاح.\nنتمنى لك تجربة ممتعة.")
+                # إرسال إشعار للمدير (أنت)
+                send_telegram(chat_id, f"✅ تم شحن `{amount}$` للعميل `{u_uid}` بنجاح.")
+                # إرسال إشعار للعميل (إذا كان الـ ID هو نفسه Chat ID)
+                send_telegram(u_uid, f"✅ تم قبول طلبك وشحن رصيدك بمبلغ `{amount}$`.")
 
             elif status == "reject":
-                # رسالة للمدير
-                requests.post(f"https://api.telegram.org/bot{BOT_TOKEN}/answerCallbackQuery", 
-                              json={"callback_query_id": query["id"], "text": "❌ تم الرفض وإبلاغ العميل"})
-                
-                # إشعار للعميل (الزبون)
-                send_telegram(u_uid, "❌ *نعتذر منك!*\nلقد تم رفض طلب الشحن الخاص بك. يرجى التأكد من البيانات أو التواصل مع الدعم الفني.")
+                send_telegram(chat_id, f"❌ تم رفض طلب العميل `{u_uid}`.")
+                send_telegram(u_uid, "❌ نعتذر، تم رفض طلب الشحن الخاص بك.")
 
-            # تحديث رسالة المدير لتوضيح أن العملية تمت
+            # تحديث الرسالة الأصلية لإخفاء الأزرار
             requests.post(f"https://api.telegram.org/bot{BOT_TOKEN}/editMessageText", json={
-                "chat_id": query["message"]["chat"]["id"],
+                "chat_id": chat_id,
                 "message_id": query["message"]["message_id"],
-                "text": query["message"]["text"] + f"\n\n🏁 *الحالة النهائية:* {'تم القبول' if status == 'accept' else 'تم الرفض'}"
+                "text": query["message"]["text"] + f"\n\n🏁 الحالة: {'تم القبول' if status == 'accept' else 'تم الرفض'}"
             })
 
         except Exception as e:
-            send_telegram(query["message"]["chat"]["id"], f"❌ خطأ: {str(e)}")
+            send_telegram(chat_id, f"⚠️ حدث خطأ أثناء التحديث: {str(e)}")
 
     return "ok", 200
 

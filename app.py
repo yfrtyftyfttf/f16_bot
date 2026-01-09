@@ -21,17 +21,16 @@ except Exception as e:
     print(f"❌ Firebase Setup Error: {e}")
 
 BOT_TOKEN = "6785445743:AAFquuyfY2IIjgs2x6PnL61uA-3apHIpz2k"
+# ملاحظة: تأكد أن هذا هو معرفك الصحيح في تلجرام
 ADMIN_ID = "6695916631"
 
-# قاموس لتخزين حالة الإدارة مؤقتاً
 admin_state = {}
 
-def send_telegram(text, markup=None):
+def send_telegram(chat_id, text, markup=None):
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
-    payload = {"chat_id": ADMIN_ID, "text": text, "parse_mode": "Markdown"}
+    payload = {"chat_id": chat_id, "text": text, "parse_mode": "Markdown"}
     if markup: payload["reply_markup"] = markup
-    r = requests.post(url, json=payload)
-    return r.json()
+    return requests.post(url, json=payload)
 
 @app.route('/')
 def home(): return "Bot is Online", 200
@@ -41,75 +40,52 @@ def webhook():
     update = request.get_json()
     if not update: return "empty", 200
 
-    # 1. معالجة الرسائل النصية (البحث عن ID)
     if "message" in update:
         msg = update["message"]
         chat_id = str(msg["chat"]["id"])
         text = msg.get("text", "")
 
-        if chat_id == ADMIN_ID:
-            # إذا كان النص هو ID مستخدم (طويل)
-            if len(text) > 15:
-                try:
-                    user_doc = db.collection("users").doc(text).get()
-                    if user_doc.exists:
-                        data = user_doc.to_dict()
-                        name = data.get('name', 'غير معروف')
-                        balance = data.get('balance', 0.0)
-                        
-                        resp_text = f"👤 *بيانات المستخدم:*\n\n"
-                        resp_text += f"🔹 الاسم: {name}\n"
-                        resp_text += f"💰 الرصيد الحالي: {balance}$\n"
-                        resp_text += f"🆔 الـ ID: `{text}`"
-                        
-                        markup = {
-                            "inline_keyboard": [
-                                [{"text": "➕ شحن رصيد", "callback_data": f"ask:charge:{text}"}],
-                                [{"text": "➖ خصم رصيد", "callback_data": f"ask:deduct:{text}"}],
-                                [{"text": "❌ إغلاق", "callback_data": "close"}]
-                            ]
-                        }
-                        send_telegram(resp_text, markup)
-                    else:
-                        send_telegram("❌ هذا الـ ID غير موجود في قاعدة البيانات.")
-                except Exception as e:
-                    send_telegram(f"❌ خطأ في البحث: {str(e)}")
-            
-            # إذا كان الإدمن في حالة انتظار إدخال مبلغ
-            elif ADMIN_ID in admin_state:
-                state = admin_state.pop(ADMIN_ID)
-                try:
-                    amount = float(text)
-                    u_uid = state['uid']
-                    action = state['action']
-                    
-                    change = amount if action == "charge" else -amount
-                    db.collection("users").doc(u_uid).update({"balance": firestore.Increment(change)})
-                    
-                    send_telegram(f"✅ تم التحديث!\nتم {'إضافة' if action == 'charge' else 'خصم'} `{amount}$` للمستخدم.")
-                except:
-                    send_telegram("⚠️ يرجى إرسال رقم فقط.")
+        # مؤقتاً: سنرد على أي شخص للتأكد من عمل البوت
+        if text == "/start":
+            send_telegram(chat_id, f"👋 أهلاً بك! معرفك (Chat ID) هو: `{chat_id}`\nأرسل لي ID المستخدم للبحث عنه.")
+            return "ok", 200
 
-    # 2. معالجة ضغطات الأزرار
+        # معالجة البحث عن مستخدم
+        if len(text) > 15:
+            try:
+                user_doc = db.collection("users").doc(text).get()
+                if user_doc.exists:
+                    data = user_doc.to_dict()
+                    name = data.get('name', 'غير معروف')
+                    balance = data.get('balance', 0.0)
+                    
+                    resp_text = f"👤 *بيانات المستخدم:*\n\n"
+                    resp_text += f"🔹 الاسم: {name}\n"
+                    resp_text += f"💰 الرصيد: {balance}$\n"
+                    resp_text += f"🆔 الـ ID: `{text}`"
+                    
+                    markup = {
+                        "inline_keyboard": [
+                            [{"text": "➕ شحن", "callback_data": f"ask:charge:{text}"}],
+                            [{"text": "➖ خصم", "callback_data": f"ask:deduct:{text}"}]
+                        ]
+                    }
+                    send_telegram(chat_id, resp_text, markup)
+                else:
+                    send_telegram(chat_id, "❌ هذا الـ ID غير موجود في Firestore.")
+            except Exception as e:
+                send_telegram(chat_id, f"❌ خطأ في Firebase: {str(e)}")
+
+    # معالجة الأزرار
     if "callback_query" in update:
         query = update["callback_query"]
-        data = query["data"].split(":")
+        cb_data = query["data"].split(":")
+        chat_id = str(query["message"]["chat"]["id"])
         
-        if data[0] == "ask":
-            admin_state[ADMIN_ID] = {"action": data[1], "uid": data[2]}
-            action_name = "إضافته" if data[1] == "charge" else "خصمه"
-            send_telegram(f"✍️ أرسل المبلغ المراد {action_name} الآن:")
-        
-        elif data[0] == "close":
-            requests.post(f"https://api.telegram.org/bot{BOT_TOKEN}/deleteMessage", 
-                          json={"chat_id": ADMIN_ID, "message_id": query["message"]["message_id"]})
-
-    return "ok", 200
-
-# إبقاء استقبال الطلبات من الموقع كما هو
-@app.route('/send_order', methods=['POST'])
-def send_order():
-    # ... الكود الخاص بك لإرسال طلبات الرشق ...
+        if cb_data[0] == "ask":
+            admin_state[chat_id] = {"action": cb_data[1], "uid": cb_data[2]}
+            send_telegram(chat_id, f"✍️ أرسل المبلغ الآن لتنفيذ عملية الـ {cb_data[1]}:")
+            
     return "ok", 200
 
 if __name__ == "__main__":

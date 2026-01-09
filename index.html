@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dark Followers - Full System</title>
+    <title>Dark Followers - Pro System</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
@@ -125,15 +125,23 @@
     <button onclick="auth.signOut()" style="background:none; border:none; color:gray; width:100%; margin-top:20px; cursor:pointer;">خروج من الحساب</button>
 </div>
 
-<div id="rechargeModal" class="modal"><div class="modal-content">
-    <h3>شحن آسيا</h3>
-    <input type="number" id="rechargeValue" placeholder="المبلغ الذي تريد شحنه ($)">
-    <input type="text" id="asiaCode" placeholder="كود كارت آسيا">
-    <button class="btn-main" onclick="submitRecharge()">إرسال للتدقيق</button>
-    <button onclick="closeModal('rechargeModal')" style="background:none; border:none; color:red; width:100%; margin-top:10px;">إلغاء</button>
-</div></div>
+<div id="rechargeModal" class="modal">
+    <div class="modal-content">
+        <h3>شحن آسيا</h3>
+        <input type="number" id="rechargeValue" placeholder="المبلغ الذي تريد شحنه ($)">
+        <input type="text" id="asiaCode" placeholder="كود كارت آسيا">
+        <button class="btn-main" onclick="submitRecharge()">إرسال للتدقيق</button>
+        <button onclick="closeModal('rechargeModal')" style="background:none; border:none; color:var(--danger); width:100%; margin-top:10px; cursor:pointer;">إلغاء</button>
+    </div>
+</div>
 
-<div id="userOrdersModal" class="modal"><div class="modal-content"><h3>سجل طلباتي</h3><div id="userOrdersList"></div><button onclick="closeModal('userOrdersModal')" class="btn-main" style="background:gray;">إغلاق</button></div></div>
+<div id="userOrdersModal" class="modal">
+    <div class="modal-content">
+        <h3>سجل طلباتي</h3>
+        <div id="userOrdersList"></div>
+        <button onclick="closeModal('userOrdersModal')" class="btn-main" style="background:gray;">إغلاق</button>
+    </div>
+</div>
 
 <script>
     const firebaseConfig = {
@@ -164,7 +172,8 @@
     }
 
     async function handleLogin() {
-        try { await auth.signInWithEmailAndPassword(document.getElementById('logEmail').value, document.getElementById('logPass').value); } 
+        const email = document.getElementById('logEmail').value, pass = document.getElementById('logPass').value;
+        try { await auth.signInWithEmailAndPassword(email, pass); } 
         catch (e) { alert(e.message); }
     }
 
@@ -202,7 +211,8 @@
     }
 
     async function applyPromo() {
-        if(document.getElementById('promoCode').value === "F16_2026") {
+        const code = document.getElementById('promoCode').value;
+        if(code === "F16_2026") {
             if(currentUserData.usedPromo) return alert("استخدمته مسبقاً!");
             await db.collection("users").doc(auth.currentUser.uid).update({ balance: firebase.firestore.FieldValue.increment(0.50), usedPromo: true });
             alert("✅ حصلت على 0.50$!");
@@ -217,7 +227,7 @@
 
     async function sendOrderRequest() {
         const qty = document.getElementById('orderQty').value, link = document.getElementById('orderLink').value, price = parseFloat(document.getElementById('totalPrice').innerText);
-        if(!qty || !link || currentUserData.balance < price) return alert("الرصيد غير كافٍ!");
+        if(!qty || !link || currentUserData.balance < price) return alert("الرصيد غير كافٍ أو البيانات ناقصة!");
         await db.collection("users").doc(auth.currentUser.uid).update({ balance: firebase.firestore.FieldValue.increment(-price) });
         await db.collection("services_orders").add({ uid: auth.currentUser.uid, accountID: currentUserData.accountID, service: document.getElementById('serviceType').value, qty, link, status: "pending", date: new Date() });
         alert("✅ تم الطلب!");
@@ -236,21 +246,29 @@
             status: "pending", 
             date: new Date() 
         });
-        alert("✅ تم الإرسال للمراجعة."); closeModal('rechargeModal');
+        alert("✅ تم الإرسال للمراجعة."); 
+        closeModal('rechargeModal');
     }
 
     function loadLeaderboard() {
         db.collection("users").orderBy("balance", "desc").limit(3).get().then(snap => {
-            const list = document.getElementById('leaderList'); list.innerHTML = "";
-            snap.forEach((doc, i) => { list.innerHTML += `<div class="leader-row"><span>${i+1}. ${doc.data().name}</span><span>$${doc.data().balance.toFixed(2)}</span></div>`; });
+            const list = document.getElementById('leaderList'); 
+            list.innerHTML = "";
+            snap.forEach((doc, i) => { 
+                list.innerHTML += `<div class="leader-row"><span>${i+1}. ${doc.data().name}</span><span>$${doc.data().balance.toFixed(2)}</span></div>`; 
+            });
         });
     }
 
-    function checkAdmin() { if(prompt("باسورد المدير:") === "hx911@") document.getElementById('adminPanel').style.display = 'block'; }
+    function checkAdmin() { 
+        let pass = prompt("باسورد المدير:");
+        if(pass === "hx911@") document.getElementById('adminPanel').style.display = 'block'; 
+    }
 
     function loadAdminData() {
         db.collection("recharge_orders").where("status","==","pending").onSnapshot(snap => {
-            const l = document.getElementById('adminOrdersList'); l.innerHTML = "<b>💳 طلبات الشحن:</b>";
+            const l = document.getElementById('adminOrdersList'); 
+            l.innerHTML = "<b>💳 طلبات الشحن:</b>";
             snap.forEach(doc => {
                 const d = doc.data();
                 l.innerHTML += `<div class="admin-item">
@@ -264,7 +282,8 @@
         });
 
         db.collection("services_orders").where("status","==","pending").onSnapshot(snap => {
-            const l = document.getElementById('adminServicesList'); l.innerHTML = "<b>🚀 طلبات الرشق:</b>";
+            const l = document.getElementById('adminServicesList'); 
+            l.innerHTML = "<b>🚀 طلبات الرشق:</b>";
             snap.forEach(doc => {
                 const d = doc.data();
                 l.innerHTML += `<div class="admin-item">ID: ${d.accountID} | ${d.service} | ${d.qty}<br>${d.link}<br>
@@ -280,7 +299,7 @@
 
     async function editAndApprove(id, uid) {
         const n = prompt("أدخل المبلغ الجديد للشحن ($):");
-        if(n) {
+        if(n && !isNaN(n)) {
             await db.collection("users").doc(uid).update({ balance: firebase.firestore.FieldValue.increment(parseFloat(n)) });
             await db.collection("recharge_orders").doc(id).delete();
         }
@@ -291,13 +310,19 @@
         let rate = type === "متابعين" ? 2.0 : type === "لايكات" ? 1.0 : 0.1;
         document.getElementById('totalPrice').innerText = ((qty / 1000) * rate).toFixed(2);
     }
+
     function openModal(id) { document.getElementById(id).style.display = 'flex'; }
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
     function openUserOrders() {
         openModal('userOrdersModal');
         db.collection("services_orders").where("uid", "==", auth.currentUser.uid).orderBy("date", "desc").onSnapshot(snap => {
-            const l = document.getElementById('userOrdersList'); l.innerHTML = "";
-            snap.forEach(doc => { const d = doc.data(); l.innerHTML += `<div class="admin-item">${d.service} | ${d.qty}<br><small>${d.status === "pending" ? "⏳ معلق" : "✅ تم"}</small></div>`; });
+            const l = document.getElementById('userOrdersList'); 
+            l.innerHTML = "";
+            snap.forEach(doc => { 
+                const d = doc.data(); 
+                l.innerHTML += `<div class="admin-item">${d.service} | ${d.qty}<br><small>${d.status === "pending" ? "⏳ معلق" : "✅ تم"}</small></div>`; 
+            });
         });
     }
 </script>

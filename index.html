@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>فحص نظام الربط</title>
+</head>
+<body style="background:#111; color:white; text-align:center; padding-top:50px;">
+
+    <h2>نظام فحص الإرسال للبوت</h2>
+    <p>بمجرد الضغط على الزر، سيتم إرسال طلب تجريبي للسيرفر</p>
+    
+    <button id="testBtn" onclick="testConnection()" style="padding:15px 30px; cursor:pointer; background:cyan; border:none; border-radius:10px; font-weight:bold;">
+        إرسال طلب تجريبي 🚀
+    </button>
+
+    <p id="res" style="margin-top:20px; color:yellow;"></p>
+
+    <script>
+        async function testConnection() {
+            const btn = document.getElementById('testBtn');
+            const resText = document.getElementById('res');
+            
+            btn.disabled = true;
+            resText.innerText = "⏳ جاري الإرسال للسيرفر...";
+
+            try {
+                const response = await fetch('https://army-bot-3y9o.onrender.com/send_order', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_name: "فحص النظام",
+                        type: "تجربة ربط",
+                        details: { "الحالة": "السيرفر يعمل بنجاح", "الوقت": new Date().toLocaleTimeString() }
+                    })
+                });
+
+                if (response.ok) {
+                    resText.style.color = "#00ff88";
+                    resText.innerText = "✅ نجح الإرسال! تفقد بوت تليجرام الآن.";
+                } else {
+                    resText.style.color = "red";
+                    resText.innerText = "❌ فشل السيرفر في الرد. تأكد من Render.";
+                }
+            } catch (err) {
+                resText.style.color = "red";
+                resText.innerText = "⚠️ خطأ اتصال: " + err.message;
+            } finally {
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>

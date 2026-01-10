@@ -34,8 +34,8 @@
         .leader-row { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #333; font-size: 14px; }
         .btn-main { background: var(--main); color: #000; border: none; padding: 15px; width: 100%; border-radius: 12px; font-weight: bold; cursor: pointer; margin-top: 10px; }
         .btn-gold { background: var(--gold); color: #000; border: none; padding: 10px; border-radius: 10px; font-weight: bold; cursor: pointer; width: 100%; margin-bottom: 10px; }
-        .action-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 15px; }
-        .action-btn { background: var(--card); padding: 15px 5px; border-radius: 15px; border: 1px solid #30363d; text-align: center; cursor: pointer; font-size: 12px; font-weight: bold; }
+        .action-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .action-btn { background: var(--card); padding: 15px 5px; border-radius: 15px; border: 1px solid #30363d; text-align: center; cursor: pointer; font-size: 11px; font-weight: bold; }
         .action-btn i { display: block; font-size: 22px; margin-bottom: 8px; color: var(--main); }
         input, select { width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 10px; border: 1px solid #30363d; background: #0d1117; color: white; box-sizing: border-box; }
         .price-box { background: #1f2937; padding: 15px; border-radius: 12px; text-align: center; font-weight: bold; color: var(--success); border: 1px dashed var(--success); }
@@ -132,6 +132,7 @@
     <div class="action-grid">
         <div class="action-btn" onclick="openModal('rechargeModal')"><i class="fas fa-wallet"></i> شحن</div>
         <div class="action-btn" onclick="openUserOrders()"><i class="fas fa-list-check"></i> طلباتي</div>
+        <div class="action-btn" onclick="openModal('offersModal')"><i class="fas fa-fire"></i> عروض</div>
         <div class="action-btn" onclick="window.location.href='https://t.me/lRAQ97'"><i class="fab fa-telegram-plane"></i> الدعم</div>
     </div>
 
@@ -183,6 +184,18 @@
     <button onclick="firebase.auth().signOut()" style="background:none; border:none; color:gray; width:100%; margin-top:20px; cursor:pointer;">خروج من الحساب</button>
 </div>
 
+<div id="offersModal" class="modal">
+    <div class="modal-content">
+        <h3 style="color:var(--gold)"><i class="fas fa-bolt"></i> عروض حصرية</h3>
+        <div class="order-card" style="border-right-color: var(--gold); background: #1c2128;">
+            <b>رشق متابعين تلكرام (قنوات غير مضمون)</b><br>
+            <span style="font-size: 11px; color: var(--success);">السعر: 0.30$ لكل 1000 متابع</span><br>
+            <button class="btn-main" style="padding: 8px; font-size: 12px;" onclick="selectOffer('تليجرام', 'متابعين قنوات غير مضمون', 0.30)">اختيار العرض</button>
+        </div>
+        <button onclick="closeModal('offersModal')" class="btn-main" style="background:gray; margin-top: 15px;">إغلاق</button>
+    </div>
+</div>
+
 <div id="aboutModal" class="modal"><div class="modal-content"><h3 style="color:var(--main)">تعريف الموقع</h3><p style="line-height:1.6">موقع مختص برشق الحسابات بارخص الاسعار<br>مدير الموقع Mohamed Ahmed<br><a href="https://t.me/lRAQ888" style="color:var(--main)">@lRAQ888</a></p><button onclick="closeModal('aboutModal')" class="btn-main">إغلاق</button></div></div>
 <div id="wheelModal" class="modal"><div class="modal-content"><h3>🎡 عجلة الحظ اليومية</h3><div class="wheel-container"><div class="wheel-pointer"></div><div id="wheel" class="wheel-box"></div></div><button id="spinBtn" class="btn-main" onclick="spinWheel()">دوران 🚀</button><button onclick="closeModal('wheelModal')" style="background:none; border:none; color:gray; margin-top:10px; cursor:pointer;">إغلاق</button></div></div>
 <div id="userOrdersModal" class="modal"><div class="modal-content"><h3>سجل طلباتي</h3><div id="userOrdersList"></div><button onclick="closeModal('userOrdersModal')" class="btn-main" style="background:gray;">إغلاق</button></div></div>
@@ -224,6 +237,7 @@
         "تيك توك - متابعين": 0.90, "تيك توك - لايكات": 0.50, "تيك توك - مشاهدات": 0.10,
         "انستا - متابعين": 1.00, "انستا - لايكات": 0.50, "انستا - مشاهدات": 0.10,
         "تليجرام - متابعين": 0.95, "تليجرام - مشاهدات": 0.10,
+        "تليجرام - متابعين قنوات غير مضمون": 0.30, // العرض الجديد
         "يوتيوب - متابعين": 10.00, "يوتيوب - لايكات": 7.50, "يوتيوب - مشاهدات": 5.50,
         "فيسبوك - متابعين": 4.10, "فيسبوك - لايكات": 1.45,
         "تويتر (X) - متابعين": 6.00, "سناب شات - متابعين": 6.50, "كواي - متابعين": 19.00,
@@ -234,22 +248,35 @@
         const platform = document.getElementById('platform').value;
         const serviceSelect = document.getElementById('serviceType');
         serviceSelect.innerHTML = "";
-        const services = ["متابعين", "لايكات", "مشاهدات"];
-        services.forEach(s => {
-            const key = `${platform} - ${s}`;
-            if(servicePrices[key]) {
+        
+        // جلب جميع الخدمات المرتبطة بالمنصة المختارة
+        for (const key in servicePrices) {
+            if (key.startsWith(platform + " - ")) {
+                const s = key.replace(platform + " - ", "");
                 const opt = document.createElement('option');
                 opt.value = s;
                 opt.innerText = `${s} (السعر لكل 1000: $${servicePrices[key]})`;
                 serviceSelect.appendChild(opt);
             }
-        });
+        }
+
         if(platform === "تيك توك") {
             const optFree = document.createElement('option');
             optFree.value = "مجاني"; optFree.innerText = "🎁 1000 مشاهدة تيك توك (مجاناً)";
             serviceSelect.appendChild(optFree);
         }
         calcPrice();
+    }
+
+    // وظيفة اختيار العرض من المودال
+    function selectOffer(platform, service, price) {
+        document.getElementById('platform').value = platform;
+        updateServiceList();
+        document.getElementById('serviceType').value = service;
+        document.getElementById('orderQty').value = 1000;
+        calcPrice();
+        closeModal('offersModal');
+        document.getElementById('orderQty').focus();
     }
 
     function calcPrice() {
@@ -325,8 +352,8 @@
             const res = await auth.createUserWithEmailAndPassword(email, pass); 
             await db.collection("users").doc(res.user.uid).set({ 
                 name, balance: 0.0, lastBonus: 0, lastWheel: 0, usedPromo: false, t1: false, usedFree: false,
-                referredBy: refCode || null, // تخزين من الذي دعاه
-                hasRecharged: false // للتأكد من صرف الـ 1 دولار مرة واحدة فقط
+                referredBy: refCode || null, 
+                hasRecharged: false 
             }); 
         } catch (e) { alert(e.message); }
     }
@@ -339,7 +366,6 @@
             document.getElementById('menuIcon').style.display = 'block';
             document.getElementById('uIDDisplay').innerText = user.uid.substring(0,8);
             
-            // تعيين رابط الإحالة للمستخدم
             const currentUrl = window.location.origin + window.location.pathname;
             document.getElementById('refLink').innerText = currentUrl + "?ref=" + user.uid;
 
@@ -366,7 +392,11 @@
     async function sendOrderRequest() {
         const platform = document.getElementById('platform').value, service = document.getElementById('serviceType').value, qty = parseInt(document.getElementById('orderQty').value), link = document.getElementById('orderLink').value, price = parseFloat(document.getElementById('totalPrice').innerText);
         if(!qty || !link) return alert("أدخل البيانات!");
+        
+        // شرط أقل طلب 1000 لعرض التلكرام المخصص
+        if(service === "متابعين تلكرام قنوات بدون ضمان " && qty < 1000) return alert("⚠️ أقل كمية لهذا العرض هي 1000!");
         if(service !== "مجاني" && qty < 100) return alert("⚠️ أقل كمية للطلب هي 100!");
+        
         if(service === "مجاني") {
             const u = await db.collection("users").doc(auth.currentUser.uid).get();
             if(u.data().usedFree) return alert("استخدمت المجاني مسبقاً!");
@@ -403,7 +433,7 @@
                 const d = doc.data();
                 s.innerHTML += `
                 <div class="order-card">
-                    العميل: ${d.name} <br> الخدمة: ${d.service} <br> الرابط: <a href="${d.link}" target="_blank" style="color:var(--main)">اضغط هنا</a>
+                    العيل: ${d.name} <br> الخدمة: ${d.service} <br> الرابط: <a href="${d.link}" target="_blank" style="color:var(--main)">اضغط هنا</a>
                     <div class="admin-actions">
                         <button class="admin-btn" style="background:var(--main)" onclick="approveServiceOrder('${doc.id}')">تنفيذ ⚡</button>
                         <button class="admin-btn" style="background:var(--danger)" onclick="rejectServiceOrder('${doc.id}')">إلغاء ❌</button>
@@ -417,22 +447,16 @@
         const userRef = db.collection("users").doc(uid);
         const userDoc = await userRef.get();
         const userData = userDoc.data();
-
-        // تحديث رصيد المستخدم المشحون
         await userRef.update({ balance: firebase.firestore.FieldValue.increment(amount) });
         await db.collection("recharge_orders").doc(id).update({ status: "completed" });
-
-        // التحقق من نظام الإحالة (إذا كان أول شحن له ومن طرف شخص آخر)
         if (userData.referredBy && !userData.hasRecharged) {
             const referrerRef = db.collection("users").doc(userData.referredBy);
             const referrerDoc = await referrerRef.get();
             if (referrerDoc.exists) {
-                // إضافة 1 دولار لمن دعاه
                 await referrerRef.update({ balance: firebase.firestore.FieldValue.increment(1.0) });
             }
-            await userRef.update({ hasRecharged: true }); // لمنع تكرار مكافأة الإحالة
+            await userRef.update({ hasRecharged: true });
         }
-
         alert("تم الشحن بنجاح!");
     }
 

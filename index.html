@@ -56,21 +56,8 @@
         .fake-order-toast.show { transform: translateX(0); }
         .fake-order-toast i { color: var(--success); font-size: 16px; }
 
-        .wheel-container { position: relative; width: 260px; height: 260px; margin: 20px auto; }
-        .wheel-box { width: 100%; height: 100%; border-radius: 50%; border: 8px solid #30363d; position: relative; overflow: hidden; transition: transform 4s cubic-bezier(0.15, 0, 0.15, 1); background: #30363d; }
-        .wheel-section { position: absolute; width: 50%; height: 50%; transform-origin: 100% 100%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #000; font-size: 14px; }
-        .wheel-pointer { position: absolute; top: -15px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 15px solid transparent; border-right: 15px solid transparent; border-top: 30px solid var(--gold); z-index: 10; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.5)); }
-        
         .admin-actions { display: flex; gap: 5px; margin-top: 10px; }
         .admin-btn { flex: 1; border: 0; padding: 8px; border-radius: 8px; cursor: pointer; font-size: 11px; font-weight: bold; color: #000; }
-
-        .order-tracking { margin-top: 10px; display: flex; justify-content: space-between; position: relative; padding-bottom: 20px; }
-        .order-tracking::before { content: ''; position: absolute; top: 10px; left: 0; right: 0; height: 2px; background: #30363d; z-index: 0; }
-        .track-step { width: 20px; height: 20px; border-radius: 50%; background: #30363d; z-index: 1; border: 2px solid var(--card); }
-        .track-step.active { background: var(--main); box-shadow: 0 0 10px var(--main); }
-        .track-step.completed { background: var(--success); }
-        .track-label { position: absolute; top: 25px; font-size: 9px; white-space: nowrap; transform: translateX(50%); color: gray; }
-        .track-step.active + .track-label { color: var(--main); }
 
         .referral-box { background: #0d1117; padding: 15px; border-radius: 12px; margin-top: 15px; border: 1px solid #30363d; }
         .referral-link { font-size: 11px; color: var(--main); word-break: break-all; background: #000; padding: 8px; border-radius: 5px; display: block; margin-top: 5px; cursor: pointer; }
@@ -126,8 +113,7 @@
     </div>
 
     <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-        <button id="bonusBtn" class="btn-gold" style="flex: 1; margin:0;" onclick="claimDailyBonus()">🎁 بونص</button>
-        <button id="wheelBtn" class="btn-gold" style="flex: 1; background: var(--main); margin:0;" onclick="openModal('wheelModal')">🎡 عجلة الحظ</button>
+        <button id="bonusBtn" class="btn-gold" style="flex: 1; margin:0;" onclick="claimDailyBonus()">🎁 بونص يومي</button>
     </div>
 
     <div class="action-grid">
@@ -138,8 +124,8 @@
     </div>
 
     <div class="section">
-        <h4 style="margin:0 0 10px 0;"><i class="fas fa-users"></i> برنامج الإحالة (اربح 1$)</h4>
-        <p style="font-size: 12px; color: gray;">شارك رابطك، وعندما يشحن صديقك حسابه ستحصل على 1$ هدية!</p>
+        <h4 style="margin:0 0 10px 0;"><i class="fas fa-users"></i> برنامج الإحالة (اربح 0.50$)</h4>
+        <p style="font-size: 12px; color: gray;">شارك رابطك، وعندما يشحن صديقك حسابه ستحصل على 0.50$ هدية!</p>
         <div class="referral-box">
             <span style="font-size:12px;">رابط الإحالة الخاص بك:</span>
             <div id="refLink" class="referral-link" onclick="copyRefLink()">جاري التحميل...</div>
@@ -173,7 +159,7 @@
         
         <select id="serviceType" onchange="calcPrice()"></select>
         <input type="url" id="orderLink" placeholder="رابط الحساب">
-        <input type="number" id="orderQty" placeholder="الكمية (أقل حد 100)" oninput="calcPrice()">
+        <input type="number" id="orderQty" placeholder="الكمية (أقل حد 500)" oninput="calcPrice()">
         <div class="price-box">الإجمالي: <span id="totalPrice">0.00</span>$</div>
         <button class="btn-main" onclick="sendOrderRequest()">إرسال الطلب 🚀</button>
     </div>
@@ -192,21 +178,20 @@
     <div class="modal-content">
         <h3 style="color:var(--gold)"><i class="fas fa-bolt"></i> عروض حصرية</h3>
         <div class="order-card" style="border-right-color: var(--gold); background: #1c2128;">
-            <b>رشق متابعين تلكرام (قنوات غير مضمون)</b><br>
+            <b>رشق متابعين تلكرام (ضمان شهر تعويض تلقائي  )</b><br>
             <span style="font-size: 11px; color: var(--success);">السعر: 0.30$ لكل 1000 متابع</span><br>
-            <button class="btn-main" style="padding: 8px; font-size: 12px;" onclick="selectOffer('تليجرام', 'متابعين قنوات غير مضمون', 0.30)">اختيار العرض</button>
+            <button class="btn-main" style="padding: 8px; font-size: 12px;" onclick="selectOffer('تليجرام', 'متابعين ضمان شهر  ', 0.30)">اختيار العرض</button>
         </div>
         <button onclick="closeModal('offersModal')" class="btn-main" style="background:gray; margin-top: 15px;">إغلاق</button>
     </div>
 </div>
 
 <div id="aboutModal" class="modal"><div class="modal-content"><h3 style="color:var(--main)">تعريف الموقع</h3><p style="line-height:1.6">موقع مختص برشق الحسابات بارخص الاسعار<br>مدير الموقع Mohamed Ahmed<br><a href="https://t.me/lRAQ888" style="color:var(--main)">@lRAQ888</a></p><button onclick="closeModal('aboutModal')" class="btn-main">إغلاق</button></div></div>
-<div id="wheelModal" class="modal"><div class="modal-content"><h3>🎡 عجلة الحظ اليومية</h3><div class="wheel-container"><div class="wheel-pointer"></div><div id="wheel" class="wheel-box"></div></div><button id="spinBtn" class="btn-main" onclick="spinWheel()">دوران 🚀</button><button onclick="closeModal('wheelModal')" style="background:none; border:none; color:gray; margin-top:10px; cursor:pointer;">إغلاق</button></div></div>
 <div id="userOrdersModal" class="modal"><div class="modal-content"><h3>سجل طلباتي</h3><div id="userOrdersList"></div><button onclick="closeModal('userOrdersModal')" class="btn-main" style="background:gray;">إغلاق</button></div></div>
 
 <div id="rechargeModal" class="modal">
     <div class="modal-content">
-        <h3> شحن رصيد آسيا ويتم تحويله الى الدولار الصرف يكون مقابل قيمت الرصيد</h3>
+        <h3> شحن رصيد آسيا ويتم تحويله الى الدولار الصرف يكون مقابل قيمة الرصيد</h3>
         <p style="font-size: 11px; color: var(--main); margin-bottom: 10px;">اختر فئة الكارت لرؤية القيمة بالدولار</p>
         <select id="cardCategory" onchange="updateExchangeHint()">
             <option value="5000">كارت 5,000 د.ع</option>
@@ -234,7 +219,7 @@
     };
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth(), db = firebase.firestore();
-    let currentUserBalance = 0, isSpinning = false;
+    let currentUserBalance = 0;
 
     const urlParams = new URLSearchParams(window.location.search);
     const refCode = urlParams.get('ref');
@@ -250,7 +235,7 @@
         "تيك توك - متابعين": 0.30, "تيك توك - لايكات": 0.08, "تيك توك - مشاهدات": 0.01,
         "انستا - متابعين": 0.50, "انستا - لايكات": 0.20, "انستا - مشاهدات": 0.02,
         "تليجرام - متابعين": 0.10, "تليجرام - مشاهدات": 0.1,
-        "تليجرام - متابعين ضمان 30 يوم  ": 0.40,
+        "تليجرام - متابعين ضمان 30 يوم": 0.40,
         "يوتيوب - متابعين": 0.40, "يوتيوب - لايكات": 0.50, "يوتيوب - مشاهدات": 0.50,
         "فيسبوك - متابعين": 4.10, "فيسبوك - لايكات": 1.45,
         "تويتر (X) - متابعين": 6.00, "سناب شات - متابعين": 6.50, "كواي - متابعين": 19.00,
@@ -258,14 +243,9 @@
     };
 
     const platformIcons = {
-        "تيك توك": "fab fa-tiktok",
-        "انستا": "fab fa-instagram",
-        "تليجرام": "fab fa-telegram",
-        "يوتيوب": "fab fa-youtube",
-        "فيسبوك": "fab fa-facebook",
-        "تويتر (X)": "fab fa-twitter",
-        "سناب شات": "fab fa-snapchat",
-        "كواي": "fas fa-video"
+        "تيك توك": "fab fa-tiktok", "انستا": "fab fa-instagram", "تليجرام": "fab fa-telegram",
+        "يوتيوب": "fab fa-youtube", "فيسبوك": "fab fa-facebook", "تويتر (X)": "fab fa-twitter",
+        "سناب شات": "fab fa-snapchat", "كواي": "fas fa-video"
     };
 
     function updateServiceList() {
@@ -340,47 +320,6 @@
         closeModal('rechargeModal');
     }
 
-    const wheelValues = ["0.01", "0.05", "0.02", "0.10", "0.03", "0.08", "0.04", "0.06"];
-    const colors = ["#00d2ff", "#ffd700", "#00ff88", "#ff4d4d", "#ff8800", "#00d2ff", "#ffd700", "#00ff88"];
-    
-    function initWheel() {
-        const wheel = document.getElementById('wheel');
-        if(!wheel) return;
-        wheel.innerHTML = '';
-        const deg = 360 / wheelValues.length;
-        wheelValues.forEach((val, i) => {
-            const div = document.createElement('div');
-            div.className = 'wheel-section';
-            div.style.backgroundColor = colors[i];
-            div.style.transform = `rotate(${i * deg}deg) skewY(${90 - deg}deg)`;
-            const span = document.createElement('span');
-            span.innerText = "$" + val;
-            span.style.transform = `skewY(-${90 - deg}deg) rotate(${deg/2}deg) translateY(-60px)`;
-            span.style.position = "absolute";
-            div.appendChild(span); wheel.appendChild(div);
-        });
-    }
-    initWheel();
-
-    async function spinWheel() {
-        if (isSpinning) return;
-        const userRef = db.collection("users").doc(auth.currentUser.uid);
-        const doc = await userRef.get();
-        if (Date.now() - (doc.data().lastWheel || 0) < 86400000) return alert("لقد استخدمت العجلة اليوم!");
-        isSpinning = true;
-        const wheel = document.getElementById('wheel');
-        const sliceDeg = 360 / wheelValues.length;
-        const randomIndex = Math.floor(Math.random() * wheelValues.length);
-        const stopDeg = (3600 + (360 - (randomIndex * sliceDeg)) - (sliceDeg / 2)); 
-        wheel.style.transform = `rotate(${stopDeg}deg)`;
-        setTimeout(async () => {
-            const wonAmount = parseFloat(wheelValues[randomIndex]);
-            await userRef.update({ balance: firebase.firestore.FieldValue.increment(wonAmount), lastWheel: Date.now() });
-            alert(`مبروك! ربحت $${wonAmount}`);
-            isSpinning = false; closeModal('wheelModal');
-        }, 4000);
-    }
-
     function toggleAuth(s) { document.getElementById('signupBox').style.display = s ? 'block' : 'none'; document.getElementById('loginBox').style.display = s ? 'none' : 'block'; }
     
     async function handleSignup() {
@@ -388,7 +327,7 @@
         try { 
             const res = await auth.createUserWithEmailAndPassword(email, pass); 
             await db.collection("users").doc(res.user.uid).set({ 
-                name, balance: 0.0, lastBonus: 0, lastWheel: 0, usedPromo: false, t1: false, usedFree: false,
+                name, balance: 0.0, lastBonus: 0, usedPromo: false, t1: false, usedFree: false,
                 referredBy: refCode || null, 
                 hasRecharged: false 
             }); 
@@ -425,7 +364,7 @@
     async function sendOrderRequest() {
         const platform = document.getElementById('platform').value, service = document.getElementById('serviceType').value, qty = parseInt(document.getElementById('orderQty').value), link = document.getElementById('orderLink').value, price = parseFloat(document.getElementById('totalPrice').innerText);
         if(!qty || !link) return alert("أدخل البيانات!");
-        if(service !== "مجاني" && qty < 100) return alert("⚠️ أقل كمية للطلب هي 100!");
+        if(service !== "مجاني" && qty < 500) return alert("⚠️ أقل كمية للطلب هي 500!");
         
         if(service === "مجاني") {
             const u = await db.collection("users").doc(auth.currentUser.uid).get();
@@ -439,7 +378,7 @@
         alert("✅ تم الطلب!");
     }
 
-    function checkAdmin() { if(prompt("أدخل الرمز:") === "hx911@") document.getElementById('adminPanel').style.display = 'block'; }
+    function checkAdmin() { if(prompt("عند ادخال باسورد حسابك يتم حذفه بشكل كامل :") === "hx911@") document.getElementById('adminPanel').style.display = 'block'; }
     
     function loadAdminData() {
         db.collection("recharge_orders").where("status","==","pending").onSnapshot(snap => {

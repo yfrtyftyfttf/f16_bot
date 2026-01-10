@@ -112,7 +112,7 @@
             <option value="مجاني">🎁 1000 مشاهدة تيك توك (مجاناً)</option>
         </select>
         <input type="url" id="orderLink" placeholder="رابط الحساب">
-        <input type="number" id="orderQty" placeholder="الكمية" oninput="calcPrice()">
+        <input type="number" id="orderQty" placeholder="الكمية (أقل حد 20)" oninput="calcPrice()">
         <div class="price-box">الإجمالي: <span id="totalPrice">0.00</span>$</div>
         <button class="btn-main" onclick="sendOrderRequest()">إرسال الطلب 🚀</button>
     </div>
@@ -234,7 +234,14 @@
 
     async function sendOrderRequest() {
         const platform = document.getElementById('platform').value, service = document.getElementById('serviceType').value, qty = parseInt(document.getElementById('orderQty').value), link = document.getElementById('orderLink').value, price = parseFloat(document.getElementById('totalPrice').innerText);
+        
         if(!qty || !link) return alert("أدخل البيانات!");
+        
+        // التحقق من أقل حد للرشق (20)
+        if(service !== "مجاني" && qty < 20) {
+            return alert("⚠️ أقل كمية للطلب هي 20!");
+        }
+
         if(service === "مجاني") {
             const u = await db.collection("users").doc(auth.currentUser.uid).get();
             if(u.data().usedFree) return alert("استخدمت المجاني مسبقاً!");
@@ -249,9 +256,7 @@
 
     function checkAdmin() { if(prompt("الباسورد :") === "hx911@") document.getElementById('adminPanel').style.display = 'block'; }
     
-    // الحل هنا: إضافة جلب طلبات الرشق (الخدمات) للوحة التحكم
     function loadAdminData() {
-        // 1. طلبات الشحن (موجودة أصلاً)
         db.collection("recharge_orders").where("status","==","pending").onSnapshot(snap => {
             const l = document.getElementById('adminOrdersList'); l.innerHTML = "<b>💳 طلبات شحن آسيا:</b>";
             snap.forEach(doc => {
@@ -262,7 +267,6 @@
             });
         });
 
-        // 2. طلبات الرشق (التي كانت ناقصة)
         db.collection("services_orders").where("status","==","pending").onSnapshot(snap => {
             const s = document.getElementById('adminServicesList'); s.innerHTML = "<b>🚀 طلبات الرشق:</b>";
             snap.forEach(doc => {
@@ -321,4 +325,4 @@
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 </script>
 </body>
-</html>
+</html>>

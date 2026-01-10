@@ -12,6 +12,15 @@
     <style>
         :root { --main: #00d2ff; --bg: #0a0b0e; --card: #161b22; --text: #c9d1d9; --success: #00ff88; --gold: #ffd700; --danger: #ff4d4d; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; direction: rtl; overflow-x: hidden; }
+        
+        /* تصميم القائمة الجانبية المضافة */
+        .menu-icon { position: fixed; top: 15px; left: 15px; z-index: 3001; font-size: 24px; color: var(--main); cursor: pointer; display: none; }
+        .side-menu { position: fixed; top: 0; left: -250px; width: 250px; height: 100%; background: var(--card); z-index: 4000; transition: 0.3s; padding-top: 60px; border-right: 1px solid #30363d; box-shadow: 5px 0 15px rgba(0,0,0,0.5); }
+        .side-menu.active { left: 0; }
+        .side-menu-item { padding: 15px 20px; border-bottom: 1px solid #30363d; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: 0.2s; }
+        .side-menu-item:hover { background: #1c2128; color: var(--main); }
+        .menu-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 3999; display: none; }
+
         .news-ticker { background: linear-gradient(90deg, #00d2ff, #0080ff); color: #000; padding: 8px 0; font-weight: bold; font-size: 13px; white-space: nowrap; overflow: hidden; }
         .ticker-text { display: inline-block; padding-left: 100%; animation: ticker 25s linear infinite; }
         @keyframes ticker { 0% { transform: translate(0, 0); } 100% { transform: translate(100%, 0); } }
@@ -55,6 +64,14 @@
     </style>
 </head>
 <body>
+
+<div id="menuIcon" class="menu-icon" onclick="toggleSideMenu(true)"><i class="fas fa-bars"></i></div>
+<div id="menuOverlay" class="menu-overlay" onclick="toggleSideMenu(false)"></div>
+<div id="sideMenu" class="side-menu">
+    <div class="side-menu-item" onclick="window.location.href='https://t.me/lRAQ97'"><i class="fab fa-telegram-plane"></i> تواصل مع فريق الدعم</div>
+    <div class="side-menu-item" onclick="toggleSideMenu(false); openUserOrders();"><i class="fas fa-history"></i> كشف حساب</div>
+    <div class="side-menu-item" onclick="openAboutOwner()"><i class="fas fa-user-circle"></i> تعريف الموقع</div>
+</div>
 
 <div class="news-ticker">
     <div class="ticker-text">🔥 عروض خاصة لمشتركين قناة التلكرام @lRAQ97 - بونص يومي مجاني لكل المستخدمين 🚀</div>
@@ -130,7 +147,7 @@
         <select id="serviceType" onchange="calcPrice()">
             </select>
         <input type="url" id="orderLink" placeholder="رابط الحساب">
-        <input type="number" id="orderQty" placeholder="الكمية (أقل حد 100)" oninput="calcPrice()">
+        <input type="number" id="orderQty" placeholder="الكمية (أقل حد 20)" oninput="calcPrice()">
         <div class="price-box">الإجمالي: <span id="totalPrice">0.00</span>$</div>
         <button class="btn-main" onclick="sendOrderRequest()">إرسال الطلب 🚀</button>
     </div>
@@ -143,6 +160,20 @@
     </div>
 
     <button onclick="firebase.auth().signOut()" style="background:none; border:none; color:gray; width:100%; margin-top:20px; cursor:pointer;">خروج من الحساب</button>
+</div>
+
+<div id="aboutModal" class="modal">
+    <div class="modal-content">
+        <h3 style="color:var(--main)">تعريف الموقع</h3>
+        <p style="line-height:1.6">
+            الاسم: محمد احمد <br>
+            السكن: العراق <br>
+            احد طلبة هندسة برمجيات يرحب بكم <br><br>
+            للتواصل مع مدير الموقع: <br>
+            <a href="https://t.me/lRAQ888" style="color:var(--main)">@lRAQ888</a>
+        </p>
+        <button onclick="closeModal('aboutModal')" class="btn-main">إغلاق</button>
+    </div>
 </div>
 
 <div id="wheelModal" class="modal">
@@ -187,23 +218,24 @@
     const auth = firebase.auth(), db = firebase.firestore();
     let currentUserBalance = 0, isSpinning = false;
 
+    // وظائف القائمة المضافة
+    function toggleSideMenu(open) {
+        document.getElementById('sideMenu').classList.toggle('active', open);
+        document.getElementById('menuOverlay').style.display = open ? 'block' : 'none';
+    }
+
+    function openAboutOwner() {
+        toggleSideMenu(false);
+        openModal('aboutModal');
+    }
+
     const servicePrices = {
-        "تيك توك - متابعين": 0.90,
-        "تيك توك - لايكات": 0.50,
-        "تيك توك - مشاهدات": 0.10,
-        "انستا - متابعين": 1.00,
-        "انستا - لايكات": 0.50,
-        "انستا - مشاهدات": 0.10,
-        "تليجرام - متابعين": 0.95,
-        "تليجرام - مشاهدات": 0.10,
-        "يوتيوب - متابعين": 10.00,
-        "يوتيوب - لايكات": 7.50,
-        "يوتيوب - مشاهدات": 5.50,
-        "فيسبوك - متابعين": 4.10,
-        "فيسبوك - لايكات": 1.45,
-        "تويتر (X) - متابعين": 6.00,
-        "سناب شات - متابعين": 6.50,
-        "كواي - متابعين": 19.00,
+        "تيك توك - متابعين": 0.90, "تيك توك - لايكات": 0.50, "تيك توك - مشاهدات": 0.10,
+        "انستا - متابعين": 1.00, "انستا - لايكات": 0.50, "انستا - مشاهدات": 0.10,
+        "تليجرام - متابعين": 0.95, "تليجرام - مشاهدات": 0.10,
+        "يوتيوب - متابعين": 10.00, "يوتيوب - لايكات": 7.50, "يوتيوب - مشاهدات": 5.50,
+        "فيسبوك - متابعين": 4.10, "فيسبوك - لايكات": 1.45,
+        "تويتر (X) - متابعين": 6.00, "سناب شات - متابعين": 6.50, "كواي - متابعين": 19.00,
         "مجاني": 0.00
     };
 
@@ -211,9 +243,7 @@
         const platform = document.getElementById('platform').value;
         const serviceSelect = document.getElementById('serviceType');
         serviceSelect.innerHTML = "";
-        
         const services = ["متابعين", "لايكات", "مشاهدات"];
-        
         services.forEach(s => {
             const key = `${platform} - ${s}`;
             if(servicePrices[key]) {
@@ -223,14 +253,11 @@
                 serviceSelect.appendChild(opt);
             }
         });
-
         if(platform === "تيك توك") {
             const optFree = document.createElement('option');
-            optFree.value = "مجاني";
-            optFree.innerText = "🎁 1000 مشاهدة تيك توك (مجاناً)";
+            optFree.value = "مجاني"; optFree.innerText = "🎁 1000 مشاهدة تيك توك (مجاناً)";
             serviceSelect.appendChild(optFree);
         }
-        
         calcPrice();
     }
 
@@ -238,19 +265,12 @@
         const platform = document.getElementById('platform').value;
         const service = document.getElementById('serviceType').value;
         const qty = document.getElementById('orderQty').value || 0;
-        
-        if(service === "مجاني") {
-            document.getElementById('totalPrice').innerText = "0.00";
-            return;
-        }
-
+        if(service === "مجاني") { document.getElementById('totalPrice').innerText = "0.00"; return; }
         const priceKey = `${platform} - ${service}`;
         const rate = servicePrices[priceKey] || 1.00; 
-        
         document.getElementById('totalPrice').innerText = ((qty / 1000) * rate).toFixed(2);
     }
 
-    // تشغيل القائمة لأول مرة
     updateServiceList();
 
     function startFakeOrders() {
@@ -318,6 +338,7 @@
         if (user) {
             document.getElementById('authScreen').style.display = 'none';
             document.getElementById('dashboard').style.display = 'block';
+            document.getElementById('menuIcon').style.display = 'block'; // إظهار القائمة عند الدخول
             document.getElementById('uIDDisplay').innerText = user.uid.substring(0,8);
             db.collection("users").doc(user.uid).onSnapshot(doc => {
                 if (doc.exists) {
@@ -327,13 +348,17 @@
                 }
             });
             loadLeaderboard(); loadAdminData();
-        } else { document.getElementById('authScreen').style.display = 'flex'; document.getElementById('dashboard').style.display = 'none'; }
+        } else { 
+            document.getElementById('authScreen').style.display = 'flex'; 
+            document.getElementById('dashboard').style.display = 'none';
+            document.getElementById('menuIcon').style.display = 'none'; // إخفاء القائمة
+        }
     });
 
     async function sendOrderRequest() {
         const platform = document.getElementById('platform').value, service = document.getElementById('serviceType').value, qty = parseInt(document.getElementById('orderQty').value), link = document.getElementById('orderLink').value, price = parseFloat(document.getElementById('totalPrice').innerText);
         if(!qty || !link) return alert("أدخل البيانات!");
-        if(service !== "مجاني" && qty < 100) return alert("⚠️ أقل كمية للطلب هي 100!");
+        if(service !== "مجاني" && qty < 20) return alert("⚠️ أقل كمية للطلب هي 20!");
         if(service === "مجاني") {
             const u = await db.collection("users").doc(auth.currentUser.uid).get();
             if(u.data().usedFree) return alert("استخدمت المجاني مسبقاً!");
@@ -371,7 +396,7 @@
                 const d = doc.data();
                 s.innerHTML += `
                 <div class="order-card">
-                    العيل: ${d.name} <br> الخدمة: ${d.service} <br> الكمية: ${d.qty} <br> الرابط: <a href="${d.link}" target="_blank" style="color:var(--main)">اضغط هنا</a>
+                    العميل: ${d.name} <br> الخدمة: ${d.service} <br> الكمية: ${d.qty} <br> الرابط: <a href="${d.link}" target="_blank" style="color:var(--main)">اضغط هنا</a>
                     <div class="admin-actions">
                         <button class="admin-btn" style="background:var(--main)" onclick="approveServiceOrder('${doc.id}')">تنفيذ ⚡</button>
                         <button class="admin-btn" style="background:var(--danger)" onclick="rejectServiceOrder('${doc.id}')">إلغاء ❌</button>
@@ -387,32 +412,16 @@
         alert("تم الشحن بنجاح!");
     }
 
-    async function rejectRecharge(id) {
-        if(confirm("هل أنت متأكد من رفض هذا الطلب؟")) {
-            await db.collection("recharge_orders").doc(id).update({ status: "rejected" });
-            alert("تم رفض الطلب.");
-        }
-    }
+    async function rejectRecharge(id) { if(confirm("هل أنت متأكد من رفض هذا الطلب؟")) { await db.collection("recharge_orders").doc(id).update({ status: "rejected" }); alert("تم رفض الطلب."); } }
 
     async function updateRechargePrice(id) {
         const newPrice = prompt("أدخل السعر الجديد:");
-        if(newPrice && !isNaN(newPrice)) {
-            await db.collection("recharge_orders").doc(id).update({ category: parseFloat(newPrice) });
-            alert("تم تحديث السعر.");
-        }
+        if(newPrice && !isNaN(newPrice)) { await db.collection("recharge_orders").doc(id).update({ category: parseFloat(newPrice) }); alert("تم تحديث السعر."); }
     }
 
-    async function approveServiceOrder(id) {
-        await db.collection("services_orders").doc(id).update({ status: "completed" });
-        alert("تم التنفيذ!");
-    }
+    async function approveServiceOrder(id) { await db.collection("services_orders").doc(id).update({ status: "completed" }); alert("تم التنفيذ!"); }
 
-    async function rejectServiceOrder(id) {
-        if(confirm("هل تريد إلغاء طلب الرشق هذا؟")) {
-            await db.collection("services_orders").doc(id).update({ status: "rejected" });
-            alert("تم الإلغاء.");
-        }
-    }
+    async function rejectServiceOrder(id) { if(confirm("هل تريد إلغاء طلب الرشق هذا؟")) { await db.collection("services_orders").doc(id).update({ status: "rejected" }); alert("تم الإلغاء."); } }
 
     function openUserOrders() {
         openModal('userOrdersModal');

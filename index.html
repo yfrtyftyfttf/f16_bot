@@ -62,7 +62,6 @@
         .admin-actions { display: flex; gap: 5px; margin-top: 10px; }
         .admin-btn { flex: 1; border: 0; padding: 8px; border-radius: 8px; cursor: pointer; font-size: 11px; font-weight: bold; color: #000; }
 
-        /* تعديل خاصية رقم 3: نظام تتبع الطلب */
         .order-tracking { margin-top: 10px; display: flex; justify-content: space-between; position: relative; padding-bottom: 20px; }
         .order-tracking::before { content: ''; position: absolute; top: 10px; left: 0; right: 0; height: 2px; background: #30363d; z-index: 0; }
         .track-step { width: 20px; height: 20px; border-radius: 50%; background: #30363d; z-index: 1; border: 2px solid var(--card); }
@@ -70,6 +69,10 @@
         .track-step.completed { background: var(--success); }
         .track-label { position: absolute; top: 25px; font-size: 9px; white-space: nowrap; transform: translateX(50%); color: gray; }
         .track-step.active + .track-label { color: var(--main); }
+
+        /* ستايل نظام الإحالة */
+        .referral-box { background: #0d1117; padding: 15px; border-radius: 12px; margin-top: 15px; border: 1px solid #30363d; }
+        .referral-link { font-size: 11px; color: var(--main); word-break: break-all; background: #000; padding: 8px; border-radius: 5px; display: block; margin-top: 5px; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -133,6 +136,15 @@
     </div>
 
     <div class="section">
+        <h4 style="margin:0 0 10px 0;"><i class="fas fa-users"></i> برنامج الإحالة (اربح 1$)</h4>
+        <p style="font-size: 12px; color: gray;">شارك رابطك، وعندما يشحن صديقك حسابه ستحصل على 1$ هدية!</p>
+        <div class="referral-box">
+            <span style="font-size:12px;">رابط الإحالة الخاص بك:</span>
+            <div id="refLink" class="referral-link" onclick="copyRefLink()">جاري التحميل...</div>
+        </div>
+    </div>
+
+    <div class="section">
         <h4 style="margin:0 0 10px 0;"><i class="fas fa-gift"></i> هدايا ومهام</h4>
         <input type="text" id="promoCode" placeholder="كود الخصم">
         <button class="btn-main" style="padding:10px; margin-bottom:15px;" onclick="applyPromo()">تفعيل الكود</button>
@@ -171,47 +183,13 @@
     <button onclick="firebase.auth().signOut()" style="background:none; border:none; color:gray; width:100%; margin-top:20px; cursor:pointer;">خروج من الحساب</button>
 </div>
 
-<div id="aboutModal" class="modal">
-    <div class="modal-content">
-        <h3 style="color:var(--main)">تعريف الموقع</h3>
-        <p style="line-height:1.6">
-            موقع مختص برشق الحسابات بارخص الاسعار    <br>
-            تم تطوير الموقع لغرض توفير خدمات موثوقه
-             تم تطوير الموقع بكل احتراف والمحافظه على امن معلوماتك ورصيد حساب <br>
-            
-            مدير الموقع  Mohamed Ahmed
-            احد طلبت الامن السيبراني  <br>
-            <br>
-            للتواصل مع مدير الموقع: <br>
-            <a href="https://t.me/lRAQ888" style="color:var(--main)">@lRAQ888</a>
-        </p>
-        <button onclick="closeModal('aboutModal')" class="btn-main">إغلاق</button>
-    </div>
-</div>
-
-<div id="wheelModal" class="modal">
-    <div class="modal-content">
-        <h3>🎡 عجلة الحظ اليومية</h3>
-        <div class="wheel-container">
-            <div class="wheel-pointer"></div>
-            <div id="wheel" class="wheel-box"></div>
-        </div>
-        <button id="spinBtn" class="btn-main" onclick="spinWheel()">دوران 🚀</button>
-        <button onclick="closeModal('wheelModal')" style="background:none; border:none; color:gray; margin-top:10px; cursor:pointer;">إغلاق</button>
-    </div>
-</div>
-
+<div id="aboutModal" class="modal"><div class="modal-content"><h3 style="color:var(--main)">تعريف الموقع</h3><p style="line-height:1.6">موقع مختص برشق الحسابات بارخص الاسعار<br>مدير الموقع Mohamed Ahmed<br><a href="https://t.me/lRAQ888" style="color:var(--main)">@lRAQ888</a></p><button onclick="closeModal('aboutModal')" class="btn-main">إغلاق</button></div></div>
+<div id="wheelModal" class="modal"><div class="modal-content"><h3>🎡 عجلة الحظ اليومية</h3><div class="wheel-container"><div class="wheel-pointer"></div><div id="wheel" class="wheel-box"></div></div><button id="spinBtn" class="btn-main" onclick="spinWheel()">دوران 🚀</button><button onclick="closeModal('wheelModal')" style="background:none; border:none; color:gray; margin-top:10px; cursor:pointer;">إغلاق</button></div></div>
 <div id="userOrdersModal" class="modal"><div class="modal-content"><h3>سجل طلباتي</h3><div id="userOrdersList"></div><button onclick="closeModal('userOrdersModal')" class="btn-main" style="background:gray;">إغلاق</button></div></div>
-
 <div id="rechargeModal" class="modal">
     <div class="modal-content">
         <h3>شحن آسيا</h3>
-        <select id="cardCategory">
-            <option value="5">كارت 5$</option>
-            <option value="10">كارت 10$</option>
-            <option value="15">كارت 15$</option>
-            <option value="25">كارت 25$</option>
-        </select>
+        <select id="cardCategory"><option value="5">كارت 5$</option><option value="10">كارت 10$</option><option value="15">كارت 15$</option><option value="25">كارت 25$</option></select>
         <input type="text" id="asiaCode" placeholder="كود الكارت">
         <button class="btn-main" onclick="submitRecharge()">إرسال</button>
         <button onclick="closeModal('rechargeModal')" style="background:none; border:none; color:red; margin-top:10px; cursor:pointer;">إلغاء</button>
@@ -231,16 +209,16 @@
     const auth = firebase.auth(), db = firebase.firestore();
     let currentUserBalance = 0, isSpinning = false;
 
-    // وظائف القائمة المضافة
+    // الحصول على رمز الإحالة من الرابط عند الدخول لأول مرة
+    const urlParams = new URLSearchParams(window.location.search);
+    const refCode = urlParams.get('ref');
+
     function toggleSideMenu(open) {
         document.getElementById('sideMenu').classList.toggle('active', open);
         document.getElementById('menuOverlay').style.display = open ? 'block' : 'none';
     }
 
-    function openAboutOwner() {
-        toggleSideMenu(false);
-        openModal('aboutModal');
-    }
+    function openAboutOwner() { toggleSideMenu(false); openModal('aboutModal'); }
 
     const servicePrices = {
         "تيك توك - متابعين": 0.90, "تيك توك - لايكات": 0.50, "تيك توك - مشاهدات": 0.10,
@@ -343,7 +321,14 @@
     
     async function handleSignup() {
         const name = document.getElementById('newName').value, email = document.getElementById('newEmail').value, pass = document.getElementById('newPass').value;
-        try { const res = await auth.createUserWithEmailAndPassword(email, pass); await db.collection("users").doc(res.user.uid).set({ name, balance: 0.0, lastBonus: 0, lastWheel: 0, usedPromo: false, t1: false, usedFree: false }); } catch (e) { alert(e.message); }
+        try { 
+            const res = await auth.createUserWithEmailAndPassword(email, pass); 
+            await db.collection("users").doc(res.user.uid).set({ 
+                name, balance: 0.0, lastBonus: 0, lastWheel: 0, usedPromo: false, t1: false, usedFree: false,
+                referredBy: refCode || null, // تخزين من الذي دعاه
+                hasRecharged: false // للتأكد من صرف الـ 1 دولار مرة واحدة فقط
+            }); 
+        } catch (e) { alert(e.message); }
     }
     async function handleLogin() { try { await auth.signInWithEmailAndPassword(document.getElementById('logEmail').value, document.getElementById('logPass').value); } catch (e) { alert(e.message); } }
 
@@ -351,8 +336,13 @@
         if (user) {
             document.getElementById('authScreen').style.display = 'none';
             document.getElementById('dashboard').style.display = 'block';
-            document.getElementById('menuIcon').style.display = 'block'; // إظهار القائمة عند الدخول
+            document.getElementById('menuIcon').style.display = 'block';
             document.getElementById('uIDDisplay').innerText = user.uid.substring(0,8);
+            
+            // تعيين رابط الإحالة للمستخدم
+            const currentUrl = window.location.origin + window.location.pathname;
+            document.getElementById('refLink').innerText = currentUrl + "?ref=" + user.uid;
+
             db.collection("users").doc(user.uid).onSnapshot(doc => {
                 if (doc.exists) {
                     const data = doc.data(); currentUserBalance = data.balance;
@@ -364,9 +354,14 @@
         } else { 
             document.getElementById('authScreen').style.display = 'flex'; 
             document.getElementById('dashboard').style.display = 'none';
-            document.getElementById('menuIcon').style.display = 'none'; // إخفاء القائمة
+            document.getElementById('menuIcon').style.display = 'none';
         }
     });
+
+    function copyRefLink() {
+        const link = document.getElementById('refLink').innerText;
+        navigator.clipboard.writeText(link).then(() => alert("تم نسخ رابط الإحالة بنجاح!"));
+    }
 
     async function sendOrderRequest() {
         const platform = document.getElementById('platform').value, service = document.getElementById('serviceType').value, qty = parseInt(document.getElementById('orderQty').value), link = document.getElementById('orderLink').value, price = parseFloat(document.getElementById('totalPrice').innerText);
@@ -384,7 +379,7 @@
         alert("✅ تم الطلب!");
     }
 
-    function checkAdmin() { if(prompt("ملاحضه عند كتابت باسورد حسابك يتم حذفه :") === "hx911@") document.getElementById('adminPanel').style.display = 'block'; }
+    function checkAdmin() { if(prompt("كلمة السر:") === "hx911@") document.getElementById('adminPanel').style.display = 'block'; }
     
     function loadAdminData() {
         db.collection("recharge_orders").where("status","==","pending").onSnapshot(snap => {
@@ -397,7 +392,6 @@
                     <div class="admin-actions">
                         <button class="admin-btn" style="background:var(--success)" onclick="approveRecharge('${doc.id}','${d.uid}', ${d.category})">تنفيذ ✅</button>
                         <button class="admin-btn" style="background:var(--danger)" onclick="rejectRecharge('${doc.id}')">رفض ❌</button>
-                        <button class="admin-btn" style="background:var(--main)" onclick="updateRechargePrice('${doc.id}')">تغيير السعر 💰</button>
                     </div>
                 </div>`;
             });
@@ -409,7 +403,7 @@
                 const d = doc.data();
                 s.innerHTML += `
                 <div class="order-card">
-                    العجيل: ${d.name} <br> الخدمة: ${d.service} <br> الكمية: ${d.qty} <br> الرابط: <a href="${d.link}" target="_blank" style="color:var(--main)">اضغط هنا</a>
+                    العميل: ${d.name} <br> الخدمة: ${d.service} <br> الرابط: <a href="${d.link}" target="_blank" style="color:var(--main)">اضغط هنا</a>
                     <div class="admin-actions">
                         <button class="admin-btn" style="background:var(--main)" onclick="approveServiceOrder('${doc.id}')">تنفيذ ⚡</button>
                         <button class="admin-btn" style="background:var(--danger)" onclick="rejectServiceOrder('${doc.id}')">إلغاء ❌</button>
@@ -420,21 +414,31 @@
     }
 
     async function approveRecharge(id, uid, amount) {
-        await db.collection("users").doc(uid).update({ balance: firebase.firestore.FieldValue.increment(amount) });
+        const userRef = db.collection("users").doc(uid);
+        const userDoc = await userRef.get();
+        const userData = userDoc.data();
+
+        // تحديث رصيد المستخدم المشحون
+        await userRef.update({ balance: firebase.firestore.FieldValue.increment(amount) });
         await db.collection("recharge_orders").doc(id).update({ status: "completed" });
+
+        // التحقق من نظام الإحالة (إذا كان أول شحن له ومن طرف شخص آخر)
+        if (userData.referredBy && !userData.hasRecharged) {
+            const referrerRef = db.collection("users").doc(userData.referredBy);
+            const referrerDoc = await referrerRef.get();
+            if (referrerDoc.exists) {
+                // إضافة 1 دولار لمن دعاه
+                await referrerRef.update({ balance: firebase.firestore.FieldValue.increment(1.0) });
+            }
+            await userRef.update({ hasRecharged: true }); // لمنع تكرار مكافأة الإحالة
+        }
+
         alert("تم الشحن بنجاح!");
     }
 
-    async function rejectRecharge(id) { if(confirm("هل أنت متأكد من رفض هذا الطلب؟")) { await db.collection("recharge_orders").doc(id).update({ status: "rejected" }); alert("تم رفض الطلب."); } }
-
-    async function updateRechargePrice(id) {
-        const newPrice = prompt("أدخل السعر الجديد:");
-        if(newPrice && !isNaN(newPrice)) { await db.collection("recharge_orders").doc(id).update({ category: parseFloat(newPrice) }); alert("تم تحديث السعر."); }
-    }
-
+    async function rejectRecharge(id) { await db.collection("recharge_orders").doc(id).update({ status: "rejected" }); }
     async function approveServiceOrder(id) { await db.collection("services_orders").doc(id).update({ status: "completed" }); alert("تم التنفيذ!"); }
-
-    async function rejectServiceOrder(id) { if(confirm("هل تريد إلغاء طلب الرشق هذا؟")) { await db.collection("services_orders").doc(id).update({ status: "rejected" }); alert("تم الإلغاء."); } }
+    async function rejectServiceOrder(id) { await db.collection("services_orders").doc(id).update({ status: "rejected" }); }
 
     function openUserOrders() {
         openModal('userOrdersModal');
@@ -442,28 +446,10 @@
             const l = document.getElementById('userOrdersList'); l.innerHTML = "";
             snap.forEach(doc => { 
                 const d = doc.data(); 
-                // إضافة خاصية تتبع الطلب مرئياً
                 const isPending = d.status === "pending";
                 const isCompleted = d.status === "completed";
                 const isRejected = d.status === "rejected";
-
-                l.innerHTML += `
-                <div class="order-card">
-                    <b>${d.service}</b><br>
-                    <div class="order-tracking">
-                        <div class="track-step completed"></div>
-                        <div class="track-label" style="right:0">استلام</div>
-                        
-                        <div class="track-step ${!isPending ? 'completed' : 'active'}"></div>
-                        <div class="track-label" style="right:33%">معالجة</div>
-                        
-                        <div class="track-step ${isCompleted ? 'completed' : (!isPending && !isRejected ? 'active' : '')}"></div>
-                        <div class="track-label" style="right:66%">رشق</div>
-                        
-                        <div class="track-step ${isCompleted ? 'completed' : (isRejected ? 'active' : '')}" style="background:${isRejected ? 'var(--danger)' : ''}"></div>
-                        <div class="track-label" style="right:100%">${isRejected ? 'ملغي' : 'اكتمل'}</div>
-                    </div>
-                </div>`; 
+                l.innerHTML += `<div class="order-card"><b>${d.service}</b><br><div class="order-tracking"><div class="track-step completed"></div><div class="track-label" style="right:0">استلام</div><div class="track-step ${!isPending ? 'completed' : 'active'}"></div><div class="track-label" style="right:33%">معالجة</div><div class="track-step ${isCompleted ? 'completed' : (!isPending && !isRejected ? 'active' : '')}"></div><div class="track-label" style="right:66%">رشق</div><div class="track-step ${isCompleted ? 'completed' : (isRejected ? 'active' : '')}" style="background:${isRejected ? 'var(--danger)' : ''}"></div><div class="track-label" style="right:100%">${isRejected ? 'ملغي' : 'اكتمل'}</div></div></div>`; 
             });
         });
     }

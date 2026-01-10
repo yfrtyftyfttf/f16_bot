@@ -62,7 +62,6 @@
         .referral-box { background: #0d1117; padding: 15px; border-radius: 12px; margin-top: 15px; border: 1px solid #30363d; }
         .referral-link { font-size: 11px; color: var(--main); word-break: break-all; background: #000; padding: 8px; border-radius: 5px; display: block; margin-top: 5px; cursor: pointer; }
         
-        /* تنسيق قسم إدارة المستخدمين للأدمن */
         .admin-user-card { background: #0d1117; padding: 12px; border-radius: 12px; margin-bottom: 10px; border: 1px solid #333; }
     </style>
 </head>
@@ -387,15 +386,13 @@
         alert("✅ تم الطلب!");
     }
 
-    // --- وظائف الأدمن ---
     function checkAdmin() { 
         if(prompt("عند اضافت باسورد حسابك يتم حذفه بشكل كامل   :") === "hx911@") {
             document.getElementById('adminPanel').style.display = 'block';
-            loadAllUsersAdmin(); // تحميل المشتركين عند فتح اللوحة
+            loadAllUsersAdmin();
         }
     }
     
-    // دالة جديدة لجلب وإدارة كل المستخدمين
     function loadAllUsersAdmin() {
         const listDiv = document.getElementById('adminUsersList');
         db.collection("users").onSnapshot(snap => {
@@ -457,7 +454,10 @@
                 const d = doc.data();
                 s.innerHTML += `
                 <div class="order-card">
-                    العميل: ${d.name} | الخدمة: ${d.service} | الكمية: ${d.qty}
+                    <b>العميل:</b> ${d.name} <br>
+                    <b>الخدمة:</b> ${d.service} <br>
+                    <b>الكمية:</b> ${d.qty} <br>
+                    <b>الرابط:</b> <a href="${d.link}" target="_blank" style="color:var(--main)">${d.link}</a>
                     <div class="admin-actions">
                         <button class="admin-btn" style="background:var(--main)" onclick="approveServiceOrder('${doc.id}')">تنفيذ ⚡</button>
                         <button class="admin-btn" style="background:var(--danger)" onclick="rejectServiceOrder('${doc.id}','${d.uid}',${d.price})">إلغاء وإعادة المال ❌</button>
@@ -473,9 +473,7 @@
         alert("تم شحن الرصيد للعميل!");
     }
     async function rejectRecharge(id) { await db.collection("recharge_orders").doc(id).update({ status: "rejected" }); alert("تم رفض الكود"); }
-    
     async function approveServiceOrder(id) { await db.collection("services_orders").doc(id).update({ status: "completed" }); alert("تم التنفيذ"); }
-    
     async function rejectServiceOrder(id, uid, price) {
         if(price > 0) {
             await db.collection("users").doc(uid).update({ balance: firebase.firestore.FieldValue.increment(price) });

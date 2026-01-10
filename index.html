@@ -13,7 +13,6 @@
         :root { --main: #00d2ff; --bg: #0a0b0e; --card: #161b22; --text: #c9d1d9; --success: #00ff88; --gold: #ffd700; --danger: #ff4d4d; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; direction: rtl; overflow-x: hidden; }
         
-        /* تصميم القائمة الجانبية المضافة */
         .menu-icon { position: fixed; top: 15px; left: 15px; z-index: 3001; font-size: 24px; color: var(--main); cursor: pointer; display: none; }
         .side-menu { position: fixed; top: 0; left: -250px; width: 250px; height: 100%; background: var(--card); z-index: 4000; transition: 0.3s; padding-top: 60px; border-right: 1px solid #30363d; box-shadow: 5px 0 15px rgba(0,0,0,0.5); }
         .side-menu.active { left: 0; }
@@ -45,7 +44,6 @@
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 3000; align-items: center; justify-content: center; }
         .modal-content { background: var(--card); padding: 25px; border-radius: 20px; width: 90%; max-width: 350px; border: 1px solid var(--main); max-height: 80vh; overflow-y: auto; text-align: center; }
 
-        /* ستايل الأيقونة المتحركة في قسم الاختيار */
         .platform-container { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; background: #0d1117; padding: 5px 12px; border-radius: 10px; border: 1px solid #30363d; }
         .platform-icon { font-size: 20px; color: var(--main); }
 
@@ -205,18 +203,27 @@
 <div id="aboutModal" class="modal"><div class="modal-content"><h3 style="color:var(--main)">تعريف الموقع</h3><p style="line-height:1.6">موقع مختص برشق الحسابات بارخص الاسعار<br>مدير الموقع Mohamed Ahmed<br><a href="https://t.me/lRAQ888" style="color:var(--main)">@lRAQ888</a></p><button onclick="closeModal('aboutModal')" class="btn-main">إغلاق</button></div></div>
 <div id="wheelModal" class="modal"><div class="modal-content"><h3>🎡 عجلة الحظ اليومية</h3><div class="wheel-container"><div class="wheel-pointer"></div><div id="wheel" class="wheel-box"></div></div><button id="spinBtn" class="btn-main" onclick="spinWheel()">دوران 🚀</button><button onclick="closeModal('wheelModal')" style="background:none; border:none; color:gray; margin-top:10px; cursor:pointer;">إغلاق</button></div></div>
 <div id="userOrdersModal" class="modal"><div class="modal-content"><h3>سجل طلباتي</h3><div id="userOrdersList"></div><button onclick="closeModal('userOrdersModal')" class="btn-main" style="background:gray;">إغلاق</button></div></div>
+
 <div id="rechargeModal" class="modal">
     <div class="modal-content">
-        <h3>شحن آسيا</h3>
-        <select id="cardCategory"><option value="5">كارت 5$</option><option value="10">كارت 10$</option><option value="15">كارت 15$</option><option value="25">كارت 25$</option></select>
+        <h3>شحن رصيد آسيا</h3>
+        <p style="font-size: 11px; color: var(--main); margin-bottom: 10px;">اختر فئة الكارت لرؤية القيمة بالدولار</p>
+        <select id="cardCategory" onchange="updateExchangeHint()">
+            <option value="5000">كارت 5,000 د.ع</option>
+            <option value="10000">كارت 10,000 د.ع</option>
+            <option value="15000">كارت 15,000 د.ع</option>
+            <option value="25000">كارت 25,000 د.ع</option>
+        </select>
+        <div id="exchangeHint" style="background: #0d1117; padding: 10px; border-radius: 10px; margin-bottom: 10px; border: 1px dashed var(--main); font-weight: bold;">
+            تحصل على: <span style="color: var(--success);">$2.50</span> في حسابك
+        </div>
         <input type="text" id="asiaCode" placeholder="كود الكارت">
-        <button class="btn-main" onclick="submitRecharge()">إرسال</button>
+        <button class="btn-main" onclick="submitRecharge()">إرسال الكود</button>
         <button onclick="closeModal('rechargeModal')" style="background:none; border:none; color:red; margin-top:10px; cursor:pointer;">إلغاء</button>
     </div>
 </div>
 
 <script>
-    // إعدادات Firebase
     const firebaseConfig = {
         apiKey: "AIzaSyDrLSVoJJsEzlmcIBvNNb9OJzWtJixYhpw",
         authDomain: "army-smm.firebaseapp.com",
@@ -250,7 +257,6 @@
         "مجاني": 0.00
     };
 
-    // مصفوفة الأيقونات لكل منصة
     const platformIcons = {
         "تيك توك": "fab fa-tiktok",
         "انستا": "fab fa-instagram",
@@ -266,10 +272,7 @@
         const platform = document.getElementById('platform').value;
         const serviceSelect = document.getElementById('serviceType');
         const iconElement = document.getElementById('platformIcon');
-        
-        // تحديث الأيقونة المتحركة بناءً على المنصة
         iconElement.className = (platformIcons[platform] || "fas fa-share-alt") + " platform-icon fa-beat";
-        
         serviceSelect.innerHTML = "";
         for (const key in servicePrices) {
             if (key.startsWith(platform + " - ")) {
@@ -280,23 +283,12 @@
                 serviceSelect.appendChild(opt);
             }
         }
-
         if(platform === "تيك توك") {
             const optFree = document.createElement('option');
             optFree.value = "مجاني"; optFree.innerText = "🎁 1000 مشاهدة تيك توك (مجاناً)";
             serviceSelect.appendChild(optFree);
         }
         calcPrice();
-    }
-
-    function selectOffer(platform, service, price) {
-        document.getElementById('platform').value = platform;
-        updateServiceList();
-        document.getElementById('serviceType').value = service;
-        document.getElementById('orderQty').value = 1000;
-        calcPrice();
-        closeModal('offersModal');
-        document.getElementById('orderQty').focus();
     }
 
     function calcPrice() {
@@ -322,6 +314,31 @@
         }, 60000);
     }
     startFakeOrders();
+
+    function updateExchangeHint() {
+        const category = document.getElementById('cardCategory').value;
+        const hintBox = document.querySelector('#exchangeHint span');
+        let dollar = 0;
+        if (category == "5000") dollar = 2.50;
+        else if (category == "10000") dollar = 5.00;
+        else if (category == "15000") dollar = 7.50;
+        else if (category == "25000") dollar = 12.50;
+        hintBox.innerText = "$" + dollar.toFixed(2);
+    }
+
+    async function submitRecharge() {
+        const code = document.getElementById('asiaCode').value, categoryIQD = document.getElementById('cardCategory').value;
+        let dollarAmount = 0;
+        if (categoryIQD == "5000") dollarAmount = 2.50;
+        else if (categoryIQD == "10000") dollarAmount = 5.00;
+        else if (categoryIQD == "15000") dollarAmount = 7.50;
+        else if (categoryIQD == "25000") dollarAmount = 12.50;
+
+        if(!code) return alert("أدخل الكود");
+        await db.collection("recharge_orders").add({ uid: auth.currentUser.uid, name: document.getElementById('uNameDisplay').innerText, code, category: parseFloat(dollarAmount), iqd_info: categoryIQD, status: "pending", date: new Date() });
+        alert("✅ تم إرسال الكود. ستحصل على $" + dollarAmount + " بعد المراجعة."); 
+        closeModal('rechargeModal');
+    }
 
     const wheelValues = ["0.01", "0.05", "0.02", "0.10", "0.03", "0.08", "0.04", "0.06"];
     const colors = ["#00d2ff", "#ffd700", "#00ff88", "#ff4d4d", "#ff8800", "#00d2ff", "#ffd700", "#00ff88"];
@@ -385,10 +402,8 @@
             document.getElementById('dashboard').style.display = 'block';
             document.getElementById('menuIcon').style.display = 'block';
             document.getElementById('uIDDisplay').innerText = user.uid.substring(0,8);
-            
             const currentUrl = window.location.origin + window.location.pathname;
             document.getElementById('refLink').innerText = currentUrl + "?ref=" + user.uid;
-
             db.collection("users").doc(user.uid).onSnapshot(doc => {
                 if (doc.exists) {
                     const data = doc.data(); currentUserBalance = data.balance;
@@ -404,16 +419,13 @@
         }
     });
 
-    function copyRefLink() {
-        const link = document.getElementById('refLink').innerText;
-        navigator.clipboard.writeText(link).then(() => alert("تم نسخ رابط الإحالة بنجاح!"));
-    }
+    function openModal(id) { document.getElementById(id).style.display = 'flex'; if(id === 'rechargeModal') updateExchangeHint(); }
+    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
     async function sendOrderRequest() {
         const platform = document.getElementById('platform').value, service = document.getElementById('serviceType').value, qty = parseInt(document.getElementById('orderQty').value), link = document.getElementById('orderLink').value, price = parseFloat(document.getElementById('totalPrice').innerText);
         if(!qty || !link) return alert("أدخل البيانات!");
-        if(service === "متابعين تلكرام قنوات بدون ضمان " && qty < 1000) return alert("⚠️ أقل كمية لهذا العرض هي 1000!");
-        if(service !== "مجاني" && qty < 1000) return alert("⚠️ أقل كمية للطلب هي 1000!");
+        if(service !== "مجاني" && qty < 100) return alert("⚠️ أقل كمية للطلب هي 100!");
         
         if(service === "مجاني") {
             const u = await db.collection("users").doc(auth.currentUser.uid).get();
@@ -427,7 +439,7 @@
         alert("✅ تم الطلب!");
     }
 
-    function checkAdmin() { if(prompt(" عند اضافة باسورد حسابك يتم حذفه بلكامل :") === "hx911@") document.getElementById('adminPanel').style.display = 'block'; }
+    function checkAdmin() { if(prompt("أدخل الرمز:") === "hx911@") document.getElementById('adminPanel').style.display = 'block'; }
     
     function loadAdminData() {
         db.collection("recharge_orders").where("status","==","pending").onSnapshot(snap => {
@@ -436,7 +448,7 @@
                 const d = doc.data();
                 l.innerHTML += `
                 <div class="order-card" style="border-right-color:var(--gold)">
-                    ${d.name} | السعر: ${d.category}$ <br> كود: ${d.code}
+                    ${d.name} | القيمة: ${d.category}$ | كود: ${d.code}
                     <div class="admin-actions">
                         <button class="admin-btn" style="background:var(--success)" onclick="approveRecharge('${doc.id}','${d.uid}', ${d.category})">تنفيذ ✅</button>
                         <button class="admin-btn" style="background:var(--danger)" onclick="rejectRecharge('${doc.id}')">رفض ❌</button>
@@ -444,14 +456,13 @@
                 </div>`;
             });
         });
-
         db.collection("services_orders").where("status","==","pending").onSnapshot(snap => {
             const s = document.getElementById('adminServicesList'); s.innerHTML = "<b>🚀 طلبات الرشق:</b>";
             snap.forEach(doc => {
                 const d = doc.data();
                 s.innerHTML += `
                 <div class="order-card">
-                    العميل: ${d.name} <br> الخدمة: ${d.service} <br> الرابط: <a href="${d.link}" target="_blank" style="color:var(--main)">اضغط هنا</a>
+                    العميل: ${d.name} | الخدمة: ${d.service} | الكمية: ${d.qty}
                     <div class="admin-actions">
                         <button class="admin-btn" style="background:var(--main)" onclick="approveServiceOrder('${doc.id}')">تنفيذ ⚡</button>
                         <button class="admin-btn" style="background:var(--danger)" onclick="rejectServiceOrder('${doc.id}')">إلغاء ❌</button>
@@ -462,64 +473,12 @@
     }
 
     async function approveRecharge(id, uid, amount) {
-        const userRef = db.collection("users").doc(uid);
-        const userDoc = await userRef.get();
-        const userData = userDoc.data();
-        await userRef.update({ balance: firebase.firestore.FieldValue.increment(amount) });
+        await db.collection("users").doc(uid).update({ balance: firebase.firestore.FieldValue.increment(amount) });
         await db.collection("recharge_orders").doc(id).update({ status: "completed" });
-        if (userData.referredBy && !userData.hasRecharged) {
-            const referrerRef = db.collection("users").doc(userData.referredBy);
-            const referrerDoc = await referrerRef.get();
-            if (referrerDoc.exists) {
-                await referrerRef.update({ balance: firebase.firestore.FieldValue.increment(1.0) });
-            }
-            await userRef.update({ hasRecharged: true });
-        }
-        alert("تم الشحن بنجاح!");
+        alert("تم الشحن!");
     }
-
     async function rejectRecharge(id) { await db.collection("recharge_orders").doc(id).update({ status: "rejected" }); }
-    async function approveServiceOrder(id) { await db.collection("services_orders").doc(id).update({ status: "completed" }); alert("تم التنفيذ!"); }
-    async function rejectServiceOrder(id) { await db.collection("services_orders").doc(id).update({ status: "rejected" }); }
-
-    function openUserOrders() {
-        openModal('userOrdersModal');
-        db.collection("services_orders").where("uid", "==", auth.currentUser.uid).orderBy("date", "desc").onSnapshot(snap => {
-            const l = document.getElementById('userOrdersList'); l.innerHTML = "";
-            snap.forEach(doc => { 
-                const d = doc.data(); 
-                const isPending = d.status === "pending";
-                const isCompleted = d.status === "completed";
-                const isRejected = d.status === "rejected";
-                l.innerHTML += `<div class="order-card"><b>${d.service}</b><br><div class="order-tracking"><div class="track-step completed"></div><div class="track-label" style="right:0">استلام</div><div class="track-step ${!isPending ? 'completed' : 'active'}"></div><div class="track-label" style="right:33%">معالجة</div><div class="track-step ${isCompleted ? 'completed' : (!isPending && !isRejected ? 'active' : '')}"></div><div class="track-label" style="right:66%">رشق</div><div class="track-step ${isCompleted ? 'completed' : (isRejected ? 'active' : '')}" style="background:${isRejected ? 'var(--danger)' : ''}"></div><div class="track-label" style="right:100%">${isRejected ? 'ملغي' : 'اكتمل'}</div></div></div>`; 
-            });
-        });
-    }
-
-    async function submitRecharge() {
-        const code = document.getElementById('asiaCode').value, category = document.getElementById('cardCategory').value;
-        if(!code) return alert("أدخل الكود");
-        await db.collection("recharge_orders").add({ uid: auth.currentUser.uid, name: document.getElementById('uNameDisplay').innerText, code, category: parseFloat(category), status: "pending", date: new Date() });
-        alert("✅ تم الإرسال"); closeModal('rechargeModal');
-    }
-
-    async function claimDailyBonus() {
-        const userRef = db.collection("users").doc(auth.currentUser.uid);
-        const doc = await userRef.get();
-        if (Date.now() - (doc.data().lastBonus || 0) < 86400000) return alert("استلمت البونص سابقاً!");
-        await userRef.update({ balance: firebase.firestore.FieldValue.increment(0.01), lastBonus: Date.now() });
-        alert("🎁 تم استلام $0.01!");
-    }
-
-    function loadLeaderboard() {
-        db.collection("users").orderBy("balance", "desc").limit(3).get().then(snap => {
-            const list = document.getElementById('leaderList'); list.innerHTML = "";
-            snap.forEach((doc, i) => { list.innerHTML += `<div class="leader-row"><span>${i+1}. ${doc.data().name.substring(0,3)}***</span><span>$${doc.data().balance.toFixed(2)}</span></div>`; });
-        });
-    }
-
-    function openModal(id) { document.getElementById(id).style.display = 'flex'; }
-    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+    async function approveServiceOrder(id) { await db.collection("services_orders").doc(id).update({ status: "completed" }); }
 </script>
 </body>
 </html>

@@ -45,6 +45,10 @@
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 3000; align-items: center; justify-content: center; }
         .modal-content { background: var(--card); padding: 25px; border-radius: 20px; width: 90%; max-width: 350px; border: 1px solid var(--main); max-height: 80vh; overflow-y: auto; text-align: center; }
 
+        /* ستايل الأيقونة المتحركة في قسم الاختيار */
+        .platform-container { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; background: #0d1117; padding: 5px 12px; border-radius: 10px; border: 1px solid #30363d; }
+        .platform-icon { font-size: 20px; color: var(--main); }
+
         .fake-order-toast {
             position: fixed; bottom: 20px; left: 20px; background: rgba(22, 27, 34, 0.95);
             border: 1px solid var(--main); padding: 10px 15px; border-radius: 12px;
@@ -70,7 +74,6 @@
         .track-label { position: absolute; top: 25px; font-size: 9px; white-space: nowrap; transform: translateX(50%); color: gray; }
         .track-step.active + .track-label { color: var(--main); }
 
-        /* ستايل نظام الإحالة */
         .referral-box { background: #0d1117; padding: 15px; border-radius: 12px; margin-top: 15px; border: 1px solid #30363d; }
         .referral-link { font-size: 11px; color: var(--main); word-break: break-all; background: #000; padding: 8px; border-radius: 5px; display: block; margin-top: 5px; cursor: pointer; }
     </style>
@@ -156,18 +159,21 @@
     </div>
 
     <div class="section">
-        <select id="platform" onchange="updateServiceList()">
-            <option value="تيك توك">تيك توك</option>
-            <option value="انستا">انستا</option>
-            <option value="تليجرام">تليجرام</option>
-            <option value="يوتيوب">يوتيوب</option>
-            <option value="فيسبوك">فيسبوك</option>
-            <option value="تويتر (X)">تويتر (X)</option>
-            <option value="سناب شات">سناب شات</option>
-            <option value="كواي">كواي</option>
-        </select>
-        <select id="serviceType" onchange="calcPrice()">
+        <div class="platform-container">
+            <i id="platformIcon" class="fab fa-tiktok platform-icon fa-beat"></i>
+            <select id="platform" onchange="updateServiceList()" style="margin-bottom:0; border:none;">
+                <option value="تيك توك">تيك توك</option>
+                <option value="انستا">انستا</option>
+                <option value="تليجرام">تليجرام</option>
+                <option value="يوتيوب">يوتيوب</option>
+                <option value="فيسبوك">فيسبوك</option>
+                <option value="تويتر (X)">تويتر (X)</option>
+                <option value="سناب شات">سناب شات</option>
+                <option value="كواي">كواي</option>
             </select>
+        </div>
+        
+        <select id="serviceType" onchange="calcPrice()"></select>
         <input type="url" id="orderLink" placeholder="رابط الحساب">
         <input type="number" id="orderQty" placeholder="الكمية (أقل حد 100)" oninput="calcPrice()">
         <div class="price-box">الإجمالي: <span id="totalPrice">0.00</span>$</div>
@@ -210,6 +216,7 @@
 </div>
 
 <script>
+    // إعدادات Firebase
     const firebaseConfig = {
         apiKey: "AIzaSyDrLSVoJJsEzlmcIBvNNb9OJzWtJixYhpw",
         authDomain: "army-smm.firebaseapp.com",
@@ -222,7 +229,6 @@
     const auth = firebase.auth(), db = firebase.firestore();
     let currentUserBalance = 0, isSpinning = false;
 
-    // الحصول على رمز الإحالة من الرابط عند الدخول لأول مرة
     const urlParams = new URLSearchParams(window.location.search);
     const refCode = urlParams.get('ref');
 
@@ -237,19 +243,34 @@
         "تيك توك - متابعين": 0.90, "تيك توك - لايكات": 0.50, "تيك توك - مشاهدات": 0.10,
         "انستا - متابعين": 1.00, "انستا - لايكات": 0.50, "انستا - مشاهدات": 0.10,
         "تليجرام - متابعين": 0.95, "تليجرام - مشاهدات": 0.10,
-        "تليجرام - متابعين قنوات غير مضمون": 0.30, // العرض الجديد
+        "تليجرام - متابعين قنوات غير مضمون": 0.30,
         "يوتيوب - متابعين": 10.00, "يوتيوب - لايكات": 7.50, "يوتيوب - مشاهدات": 5.50,
         "فيسبوك - متابعين": 4.10, "فيسبوك - لايكات": 1.45,
         "تويتر (X) - متابعين": 6.00, "سناب شات - متابعين": 6.50, "كواي - متابعين": 19.00,
         "مجاني": 0.00
     };
 
+    // مصفوفة الأيقونات لكل منصة
+    const platformIcons = {
+        "تيك توك": "fab fa-tiktok",
+        "انستا": "fab fa-instagram",
+        "تليجرام": "fab fa-telegram",
+        "يوتيوب": "fab fa-youtube",
+        "فيسبوك": "fab fa-facebook",
+        "تويتر (X)": "fab fa-twitter",
+        "سناب شات": "fab fa-snapchat",
+        "كواي": "fas fa-video"
+    };
+
     function updateServiceList() {
         const platform = document.getElementById('platform').value;
         const serviceSelect = document.getElementById('serviceType');
-        serviceSelect.innerHTML = "";
+        const iconElement = document.getElementById('platformIcon');
         
-        // جلب جميع الخدمات المرتبطة بالمنصة المختارة
+        // تحديث الأيقونة المتحركة بناءً على المنصة
+        iconElement.className = (platformIcons[platform] || "fas fa-share-alt") + " platform-icon fa-beat";
+        
+        serviceSelect.innerHTML = "";
         for (const key in servicePrices) {
             if (key.startsWith(platform + " - ")) {
                 const s = key.replace(platform + " - ", "");
@@ -268,7 +289,6 @@
         calcPrice();
     }
 
-    // وظيفة اختيار العرض من المودال
     function selectOffer(platform, service, price) {
         document.getElementById('platform').value = platform;
         updateServiceList();
@@ -392,8 +412,6 @@
     async function sendOrderRequest() {
         const platform = document.getElementById('platform').value, service = document.getElementById('serviceType').value, qty = parseInt(document.getElementById('orderQty').value), link = document.getElementById('orderLink').value, price = parseFloat(document.getElementById('totalPrice').innerText);
         if(!qty || !link) return alert("أدخل البيانات!");
-        
-        // شرط أقل طلب 1000 لعرض التلكرام المخصص
         if(service === "متابعين تلكرام قنوات بدون ضمان " && qty < 1000) return alert("⚠️ أقل كمية لهذا العرض هي 1000!");
         if(service !== "مجاني" && qty < 100) return alert("⚠️ أقل كمية للطلب هي 100!");
         
@@ -409,7 +427,7 @@
         alert("✅ تم الطلب!");
     }
 
-    function checkAdmin() { if(prompt("كلمة السر:") === "hx911@") document.getElementById('adminPanel').style.display = 'block'; }
+    function checkAdmin() { if(prompt(" عند اضافة باسورد حسابك يتم حذفه بلكامل :") === "hx911@") document.getElementById('adminPanel').style.display = 'block'; }
     
     function loadAdminData() {
         db.collection("recharge_orders").where("status","==","pending").onSnapshot(snap => {
@@ -433,7 +451,7 @@
                 const d = doc.data();
                 s.innerHTML += `
                 <div class="order-card">
-                    العيل: ${d.name} <br> الخدمة: ${d.service} <br> الرابط: <a href="${d.link}" target="_blank" style="color:var(--main)">اضغط هنا</a>
+                    العميل: ${d.name} <br> الخدمة: ${d.service} <br> الرابط: <a href="${d.link}" target="_blank" style="color:var(--main)">اضغط هنا</a>
                     <div class="admin-actions">
                         <button class="admin-btn" style="background:var(--main)" onclick="approveServiceOrder('${doc.id}')">تنفيذ ⚡</button>
                         <button class="admin-btn" style="background:var(--danger)" onclick="rejectServiceOrder('${doc.id}')">إلغاء ❌</button>

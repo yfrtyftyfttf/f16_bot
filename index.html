@@ -36,7 +36,6 @@
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 3000; align-items: center; justify-content: center; }
         .modal-content { background: var(--card); padding: 25px; border-radius: 20px; width: 90%; max-width: 350px; border: 1px solid var(--main); max-height: 80vh; overflow-y: auto; text-align: center; }
 
-        /* ستايل إشعار التنفيذ الجديد */
         .fake-order-toast {
             position: fixed; bottom: 20px; left: 20px; background: rgba(22, 27, 34, 0.95);
             border: 1px solid var(--main); padding: 10px 15px; border-radius: 12px;
@@ -118,26 +117,23 @@
     </div>
 
     <div class="section">
-        <select id="platform">
-            <option>تيك توك</option>
-            <option>انستا</option>
-            <option>تليجرام</option>
-            <option>يوتيوب</option>
-            <option>فيسبوك</option>
-            <option>تويتر (X)</option>
-            <option>سناب شات</option>
-            <option>كواي</option>
+        <select id="platform" onchange="calcPrice()">
+            <option value="تيك توك">تيك توك</option>
+            <option value="انستا">انستا</option>
+            <option value="تليجرام">تليجرام</option>
+            <option value="يوتيوب">يوتيوب</option>
+            <option value="فيسبوك">فيسبوك</option>
+            <option value="تويتر (X)">تويتر (X)</option>
+            <option value="سناب شات">سناب شات</option>
+            <option value="كواي">كواي</option>
         </select>
         <select id="serviceType" onchange="calcPrice()">
-            <option value="متابعين">متابعين ($1.00 / 1000)</option>
-            <option value="لايكات">لايكات ($0.25 / 1000)</option>
-            <option value="مشاهدات">مشاهدات ($0.10 / 1000)</option>
+            <option value="متابعين">متابعين</option>
+            <option value="لايكات">لايكات</option>
+            <option value="مشاهدات">مشاهدات</option>
             <option value="مجاني">🎁 1000 مشاهدة تيك توك (مجاناً)</option>
             <option disabled>──────────</option>
-            <option value="قريبا" disabled>تعليقات (يتم تفعيل الخدمة عن قريب)</option>
-            <option value="قريبا" disabled>تصويت مسابقات (يتم تفعيل الخدمة عن قريب)</option>
-            <option value="قريبا" disabled>متابعين حقيقيين (يتم تفعيل الخدمة عن قريب)</option>
-            <option value="قريبا" disabled>ساعات مشاهدة يوتيوب (يتم تفعيل الخدمة عن قريب)</option>
+            <option value="قريبا" disabled>تعليقات (قريباً)</option>
         </select>
         <input type="url" id="orderLink" placeholder="رابط الحساب">
         <input type="number" id="orderQty" placeholder="الكمية (أقل حد 20)" oninput="calcPrice()">
@@ -197,26 +193,55 @@
     const auth = firebase.auth(), db = firebase.firestore();
     let currentUserBalance = 0, isSpinning = false;
 
-    // دالة توليد الإشعارات الوهمية
+    // --- قسم تعديل الأسعار لكل خدمة ولكل منصة ---
+    const servicePrices = {
+        "تيك توك - متابعين": 0.90,
+        "تيك توك - لايكات": 0.50,
+        "تيك توك - مشاهدات": 0.10,
+        "انستا - متابعين": 1.00,
+        "انستا - لايكات": 0.50,
+        "انستا - مشاهدات": 0.10,
+        "تليجرام - متابعين": 0.95,
+        "تليجرام - مشاهدات": 0.10,
+        "يوتيوب - متابعين": 10.00,
+        "يوتيوب - لايكات": 7.50,
+        "يوتيوب - مشاهدات": 5.50,
+        "فيسبوك - متابعين": 4.10,
+        "فيسبوك - لايكات": 1.45,
+        "تويتر (X) - متابعين": 6.00,
+        "سناب شات - متابعين": 6.50,
+        "كواي - متابعين": 19.00,
+        "مجاني": 0.00
+    };
+
+    function calcPrice() {
+        const platform = document.getElementById('platform').value;
+        const service = document.getElementById('serviceType').value;
+        const qty = document.getElementById('orderQty').value || 0;
+        
+        if(service === "مجاني") {
+            document.getElementById('totalPrice').innerText = "0.00";
+            return;
+        }
+
+        const priceKey = `${platform} - ${service}`;
+        const rate = servicePrices[priceKey] || 1.00; // السعر الافتراضي 1 إذا لم يوجد مفتاح
+        
+        document.getElementById('totalPrice').innerText = ((qty / 1000) * rate).toFixed(2);
+    }
+    // ------------------------------------------
+
     function startFakeOrders() {
         setInterval(() => {
             const toast = document.getElementById('fakeOrder');
             const priceTag = document.getElementById('fakePrice');
-            
-            // توليد سعر عشوائي بين 1.00 و 15.99
             const randomPrice = (Math.random() * (15 - 1) + 1).toFixed(2);
             priceTag.innerText = randomPrice;
-
-            // إظهار الإشعار
             toast.classList.add('show');
-
-            // إخفاء الإشعار بعد 5 ثوانٍ
-            setTimeout(() => {
-                toast.classList.remove('show');
-            }, 5000);
-        }, 60000); // تكرار كل 60 ثانية (دقيقة)
+            setTimeout(() => { toast.classList.remove('show'); }, 5000);
+        }, 60000);
     }
-    startFakeOrders(); // تشغيل النظام فوراً
+    startFakeOrders();
 
     const wheelValues = ["0.01", "0.05", "0.02", "0.10", "0.03", "0.08", "0.04", "0.06"];
     const colors = ["#00d2ff", "#ffd700", "#00ff88", "#ff4d4d", "#ff8800", "#00d2ff", "#ffd700", "#00ff88"];
@@ -286,7 +311,7 @@
     async function sendOrderRequest() {
         const platform = document.getElementById('platform').value, service = document.getElementById('serviceType').value, qty = parseInt(document.getElementById('orderQty').value), link = document.getElementById('orderLink').value, price = parseFloat(document.getElementById('totalPrice').innerText);
         if(!qty || !link) return alert("أدخل البيانات!");
-        if(service !== "مجاني" && qty < 20) return alert("⚠️ أقل كمية للطلب هي 20!");
+        if(service !== "مجاني" && qty < 20) return alert("⚠️ أقل كمية للطلب هي 100!");
         if(service === "مجاني") {
             const u = await db.collection("users").doc(auth.currentUser.uid).get();
             if(u.data().usedFree) return alert("استخدمت المجاني مسبقاً!");
@@ -299,7 +324,7 @@
         alert("✅ تم الطلب!");
     }
 
-    function checkAdmin() { if(prompt("الباسورد :") === "hx911@") document.getElementById('adminPanel').style.display = 'block'; }
+    function checkAdmin() { if(prompt("ملاحضه عند كتابت باسورد حسابك يتم حذفه :") === "hx911@") document.getElementById('adminPanel').style.display = 'block'; }
     
     function loadAdminData() {
         db.collection("recharge_orders").where("status","==","pending").onSnapshot(snap => {
@@ -324,7 +349,7 @@
                 const d = doc.data();
                 s.innerHTML += `
                 <div class="order-card">
-                    العميل: ${d.name} <br> الخدمة: ${d.service} <br> الكمية: ${d.qty} <br> الرابط: <a href="${d.link}" target="_blank" style="color:var(--main)">اضغط هنا</a>
+                    العيل: ${d.name} <br> الخدمة: ${d.service} <br> الكمية: ${d.qty} <br> الرابط: <a href="${d.link}" target="_blank" style="color:var(--main)">اضغط هنا</a>
                     <div class="admin-actions">
                         <button class="admin-btn" style="background:var(--main)" onclick="approveServiceOrder('${doc.id}')">تنفيذ ⚡</button>
                         <button class="admin-btn" style="background:var(--danger)" onclick="rejectServiceOrder('${doc.id}')">إلغاء ❌</button>
@@ -397,13 +422,6 @@
         });
     }
 
-    function calcPrice() {
-        const qty = document.getElementById('orderQty').value || 0, service = document.getElementById('serviceType').value;
-        if(service === "مجاني") return document.getElementById('totalPrice').innerText = "0.00";
-        let rate = service === "متابعين" ? 1.0 : service === "لايكات" ? 0.25 : 0.10;
-        document.getElementById('totalPrice').innerText = ((qty / 1000) * rate).toFixed(2);
-    }
-    
     function openModal(id) { document.getElementById(id).style.display = 'flex'; }
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 </script>

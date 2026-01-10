@@ -10,7 +10,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 
     <style>
-        :root { --main: #00d2ff; --bg: #0a0b0e; --card: #161b22; --text: #c9d1d9; --success: #00ff88; --gold: #ffd700; }
+        :root { --main: #00d2ff; --bg: #0a0b0e; --card: #161b22; --text: #c9d1d9; --success: #00ff88; --gold: #ffd700; --danger: #ff4d4d; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; direction: rtl; overflow-x: hidden; }
         .news-ticker { background: linear-gradient(90deg, #00d2ff, #0080ff); color: #000; padding: 8px 0; font-weight: bold; font-size: 13px; white-space: nowrap; overflow: hidden; }
         .ticker-text { display: inline-block; padding-left: 100%; animation: ticker 25s linear infinite; }
@@ -40,6 +40,10 @@
         .wheel-box { width: 100%; height: 100%; border-radius: 50%; border: 8px solid #30363d; position: relative; overflow: hidden; transition: transform 4s cubic-bezier(0.15, 0, 0.15, 1); background: #30363d; }
         .wheel-section { position: absolute; width: 50%; height: 50%; transform-origin: 100% 100%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #000; font-size: 14px; }
         .wheel-pointer { position: absolute; top: -15px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 15px solid transparent; border-right: 15px solid transparent; border-top: 30px solid var(--gold); z-index: 10; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.5)); }
+        
+        /* أزرار الإدارة الجديدة */
+        .admin-actions { display: flex; gap: 5px; margin-top: 10px; }
+        .admin-btn { flex: 1; border: 0; padding: 8px; border-radius: 8px; cursor: pointer; font-size: 11px; font-weight: bold; color: #000; }
     </style>
 </head>
 <body>
@@ -167,13 +171,14 @@
     };
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth(), db = firebase.firestore();
-    let currentUserBalance = 0, usedFreeService = false, isSpinning = false;
+    let currentUserBalance = 0, isSpinning = false;
 
     const wheelValues = ["0.01", "0.05", "0.02", "0.10", "0.03", "0.08", "0.04", "0.06"];
     const colors = ["#00d2ff", "#ffd700", "#00ff88", "#ff4d4d", "#ff8800", "#00d2ff", "#ffd700", "#00ff88"];
     
     function initWheel() {
         const wheel = document.getElementById('wheel');
+        if(!wheel) return;
         wheel.innerHTML = '';
         const deg = 360 / wheelValues.length;
         wheelValues.forEach((val, i) => {
@@ -210,6 +215,7 @@
     }
 
     function toggleAuth(s) { document.getElementById('signupBox').style.display = s ? 'block' : 'none'; document.getElementById('loginBox').style.display = s ? 'none' : 'block'; }
+    
     async function handleSignup() {
         const name = document.getElementById('newName').value, email = document.getElementById('newEmail').value, pass = document.getElementById('newPass').value;
         try { const res = await auth.createUserWithEmailAndPassword(email, pass); await db.collection("users").doc(res.user.uid).set({ name, balance: 0.0, lastBonus: 0, lastWheel: 0, usedPromo: false, t1: false, usedFree: false }); } catch (e) { alert(e.message); }
@@ -234,14 +240,8 @@
 
     async function sendOrderRequest() {
         const platform = document.getElementById('platform').value, service = document.getElementById('serviceType').value, qty = parseInt(document.getElementById('orderQty').value), link = document.getElementById('orderLink').value, price = parseFloat(document.getElementById('totalPrice').innerText);
-        
         if(!qty || !link) return alert("أدخل البيانات!");
-        
-        // التحقق من أقل حد للرشق (20)
-        if(service !== "مجاني" && qty < 20) {
-            return alert("⚠️ أقل كمية للطلب هي 20!");
-        }
-
+        if(service !== "مجاني" && qty < 20) return alert("⚠️ أقل كمية للطلب هي 20!");
         if(service === "مجاني") {
             const u = await db.collection("users").doc(auth.currentUser.uid).get();
             if(u.data().usedFree) return alert("استخدمت المجاني مسبقاً!");
@@ -257,13 +257,20 @@
     function checkAdmin() { if(prompt("الباسورد :") === "hx911@") document.getElementById('adminPanel').style.display = 'block'; }
     
     function loadAdminData() {
+        // إدارة طلبات الشحن مع الأيقونات الجديدة
         db.collection("recharge_orders").where("status","==","pending").onSnapshot(snap => {
             const l = document.getElementById('adminOrdersList'); l.innerHTML = "<b>💳 طلبات شحن آسيا:</b>";
             snap.forEach(doc => {
                 const d = doc.data();
-                l.innerHTML += `<div class="order-card" style="border-right-color:var(--gold)">
-                ${d.name} | ${d.category}$ <br> كود: ${d.code} <br>
-                <button onclick="approveRecharge('${doc.id}','${d.uid}', ${d.category})" style="background:var(--success); border:0; padding:5px; border-radius:5px; cursor:pointer;">تفعيل ✅</button></div>`;
+                l.innerHTML += `
+                <div class="order-card" style="border-right-color:var(--gold)">
+                    ${d.name} | السعر: ${d.category}$ <br> كود: ${d.code}
+                    <div class="admin-actions">
+                        <button class="admin-btn" style="background:var(--success)" onclick="approveRecharge('${doc.id}','${d.uid}', ${d.category})">تنفيذ ✅</button>
+                        <button class="admin-btn" style="background:var(--danger)" onclick="rejectRecharge('${doc.id}')">رفض ❌</button>
+                        <button class="admin-btn" style="background:var(--main)" onclick="updateRechargePrice('${doc.id}')">تغيير السعر 💰</button>
+                    </div>
+                </div>`;
             });
         });
 
@@ -278,10 +285,26 @@
         });
     }
 
+    // وظائف أزرار الإدارة الجديدة
     async function approveRecharge(id, uid, amount) {
         await db.collection("users").doc(uid).update({ balance: firebase.firestore.FieldValue.increment(amount) });
         await db.collection("recharge_orders").doc(id).update({ status: "completed" });
-        alert("تم!");
+        alert("تم الشحن بنجاح!");
+    }
+
+    async function rejectRecharge(id) {
+        if(confirm("هل أنت متأكد من رفض هذا الطلب؟")) {
+            await db.collection("recharge_orders").doc(id).update({ status: "rejected" });
+            alert("تم رفض الطلب.");
+        }
+    }
+
+    async function updateRechargePrice(id) {
+        const newPrice = prompt("أدخل السعر الجديد:");
+        if(newPrice && !isNaN(newPrice)) {
+            await db.collection("recharge_orders").doc(id).update({ category: parseFloat(newPrice) });
+            alert("تم تحديث السعر.");
+        }
     }
 
     async function approveServiceOrder(id) {
@@ -296,12 +319,14 @@
             snap.forEach(doc => { const d = doc.data(); l.innerHTML += `<div class="order-card">${d.service}<br><small>${d.status === "pending" ? "⏳ معلق" : "✅ تم"}</small></div>`; });
         });
     }
+
     async function submitRecharge() {
         const code = document.getElementById('asiaCode').value, category = document.getElementById('cardCategory').value;
         if(!code) return alert("أدخل الكود");
         await db.collection("recharge_orders").add({ uid: auth.currentUser.uid, name: document.getElementById('uNameDisplay').innerText, code, category: parseFloat(category), status: "pending", date: new Date() });
         alert("✅ تم الإرسال"); closeModal('rechargeModal');
     }
+
     async function claimDailyBonus() {
         const userRef = db.collection("users").doc(auth.currentUser.uid);
         const doc = await userRef.get();
@@ -309,20 +334,23 @@
         await userRef.update({ balance: firebase.firestore.FieldValue.increment(0.01), lastBonus: Date.now() });
         alert("🎁 تم استلام $0.01!");
     }
+
     function loadLeaderboard() {
         db.collection("users").orderBy("balance", "desc").limit(3).get().then(snap => {
             const list = document.getElementById('leaderList'); list.innerHTML = "";
             snap.forEach((doc, i) => { list.innerHTML += `<div class="leader-row"><span>${i+1}. ${doc.data().name.substring(0,3)}***</span><span>$${doc.data().balance.toFixed(2)}</span></div>`; });
         });
     }
+
     function calcPrice() {
         const qty = document.getElementById('orderQty').value || 0, service = document.getElementById('serviceType').value;
         if(service === "مجاني") return document.getElementById('totalPrice').innerText = "0.00";
         let rate = service === "متابعين" ? 1.0 : service === "لايكات" ? 0.25 : 0.10;
         document.getElementById('totalPrice').innerText = ((qty / 1000) * rate).toFixed(2);
     }
+    
     function openModal(id) { document.getElementById(id).style.display = 'flex'; }
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 </script>
 </body>
-</html>>
+</html>

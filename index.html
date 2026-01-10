@@ -333,7 +333,7 @@
     async function sendOrderRequest() {
         const platform = document.getElementById('platform').value, service = document.getElementById('serviceType').value, qty = parseInt(document.getElementById('orderQty').value), link = document.getElementById('orderLink').value, price = parseFloat(document.getElementById('totalPrice').innerText);
         if(!qty || !link) return alert("أدخل البيانات!");
-        if(service !== "مجاني" && qty < 20) return alert("⚠️ أقل كمية للطلب هي 100!");
+        if(service !== "مجاني" && qty < 100) return alert("⚠️ أقل كمية للطلب هي 100!");
         if(service === "مجاني") {
             const u = await db.collection("users").doc(auth.currentUser.uid).get();
             if(u.data().usedFree) return alert("استخدمت المجاني مسبقاً!");

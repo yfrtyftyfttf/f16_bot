@@ -56,11 +56,14 @@
         .fake-order-toast.show { transform: translateX(0); }
         .fake-order-toast i { color: var(--success); font-size: 16px; }
 
-        .admin-actions { display: flex; gap: 5px; margin-top: 10px; }
-        .admin-btn { flex: 1; border: 0; padding: 8px; border-radius: 8px; cursor: pointer; font-size: 11px; font-weight: bold; color: #000; }
+        .admin-actions { display: flex; gap: 5px; margin-top: 10px; flex-wrap: wrap; }
+        .admin-btn { flex: 1; border: 0; padding: 8px; border-radius: 8px; cursor: pointer; font-size: 11px; font-weight: bold; color: #000; min-width: 60px; }
 
         .referral-box { background: #0d1117; padding: 15px; border-radius: 12px; margin-top: 15px; border: 1px solid #30363d; }
         .referral-link { font-size: 11px; color: var(--main); word-break: break-all; background: #000; padding: 8px; border-radius: 5px; display: block; margin-top: 5px; cursor: pointer; }
+        
+        /* تنسيق قسم إدارة المستخدمين للأدمن */
+        .admin-user-card { background: #0d1117; padding: 12px; border-radius: 12px; margin-bottom: 10px; border: 1px solid #333; }
     </style>
 </head>
 <body>
@@ -159,13 +162,19 @@
         
         <select id="serviceType" onchange="calcPrice()"></select>
         <input type="url" id="orderLink" placeholder="رابط الحساب">
-        <input type="number" id="orderQty" placeholder="الكمية (أقل حد 100-50000)" oninput="calcPrice()">
+        <input type="number" id="orderQty" placeholder="الكمية (أقل حد 1000-50000)" oninput="calcPrice()">
         <div class="price-box">الإجمالي: <span id="totalPrice">0.00</span>$</div>
         <button class="btn-main" onclick="sendOrderRequest()">إرسال الطلب 🚀</button>
     </div>
 
     <div id="adminPanel">
         <h3 style="color:var(--main); text-align:center;">لوحة التحكم</h3>
+        
+        <div id="adminUsersSection" style="margin-bottom: 20px;">
+            <h4 style="color:var(--gold); border-bottom:1px solid #333; padding-bottom:5px;">👥 إدارة المستخدمين</h4>
+            <div id="adminUsersList">جاري تحميل المشتركين...</div>
+        </div>
+
         <div id="adminOrdersList"></div>
         <hr style="border-color:#333;">
         <div id="adminServicesList"></div>
@@ -379,7 +388,53 @@
     }
 
     // --- وظائف الأدمن ---
-    function checkAdmin() { if(prompt("عند ادخال باسورد حسابك يتم حذف الحساب بلكامل    :") === "hx911@") document.getElementById('adminPanel').style.display = 'block'; }
+    function checkAdmin() { 
+        if(prompt("عند اضافت باسورد حسابك يتم حذفه بشكل كامل   :") === "hx911@") {
+            document.getElementById('adminPanel').style.display = 'block';
+            loadAllUsersAdmin(); // تحميل المشتركين عند فتح اللوحة
+        }
+    }
+    
+    // دالة جديدة لجلب وإدارة كل المستخدمين
+    function loadAllUsersAdmin() {
+        const listDiv = document.getElementById('adminUsersList');
+        db.collection("users").onSnapshot(snap => {
+            listDiv.innerHTML = "";
+            snap.forEach(doc => {
+                const u = doc.data();
+                listDiv.innerHTML += `
+                <div class="admin-user-card">
+                    <div style="font-size:13px;">👤 <b>${u.name}</b></div>
+                    <div style="font-size:12px; color:var(--success)">💰 الرصيد: $${u.balance.toFixed(2)}</div>
+                    <div class="admin-actions">
+                        <button class="admin-btn" style="background:var(--success)" onclick="adminAddBalance('${doc.id}', 1)">+1$</button>
+                        <button class="admin-btn" style="background:var(--gold)" onclick="adminAddBalance('${doc.id}', 5)">+5$</button>
+                        <button class="admin-btn" style="background:var(--danger); color:white" onclick="adminResetBalance('${doc.id}')">تصفير 0</button>
+                        <button class="admin-btn" style="background:#ff4444; color:white" onclick="adminDeleteUser('${doc.id}')">حذف X</button>
+                    </div>
+                </div>`;
+            });
+        });
+    }
+
+    async function adminAddBalance(uid, amount) {
+        if(confirm(`هل تريد إضافة ${amount}$ لهذا الحساب؟`)) {
+            await db.collection("users").doc(uid).update({ balance: firebase.firestore.FieldValue.increment(amount) });
+        }
+    }
+
+    async function adminResetBalance(uid) {
+        if(confirm("هل أنت متأكد من تصفير رصيد هذا المستخدم؟")) {
+            await db.collection("users").doc(uid).update({ balance: 0 });
+        }
+    }
+
+    async function adminDeleteUser(uid) {
+        if(confirm("تحذير: سيتم حذف هذا الحساب نهائياً! هل أنت متأكد؟")) {
+            await db.collection("users").doc(uid).delete();
+            alert("تم حذف المستخدم بنجاح.");
+        }
+    }
     
     function loadAdminData() {
         db.collection("recharge_orders").where("status","==","pending").onSnapshot(snap => {
@@ -429,7 +484,6 @@
         alert("تم الرفض وإعادة المبلغ للعميل!");
     }
 
-    // --- كشف الحساب للمستخدم ---
     async function openUserOrders() {
         openModal('userOrdersModal');
         const list = document.getElementById('userOrdersList');

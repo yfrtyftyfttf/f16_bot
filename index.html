@@ -117,7 +117,7 @@
     </div>
 
     <div class="section">
-        <select id="platform" onchange="calcPrice()">
+        <select id="platform" onchange="updateServiceList()">
             <option value="تيك توك">تيك توك</option>
             <option value="انستا">انستا</option>
             <option value="تليجرام">تليجرام</option>
@@ -128,13 +128,7 @@
             <option value="كواي">كواي</option>
         </select>
         <select id="serviceType" onchange="calcPrice()">
-            <option value="متابعين">متابعين (السعر لكل 1000)</option>
-            <option value="لايكات">لايكات (السعر لكل 1000)</option>
-            <option value="مشاهدات">مشاهدات (السعر لكل 1000)</option>
-            <option value="مجاني">🎁 1000 مشاهدة تيك توك (مجاناً)</option>
-            <option disabled>──────────</option>
-            <option value="قريبا" disabled>تعليقات (قريباً)</option>
-        </select>
+            </select>
         <input type="url" id="orderLink" placeholder="رابط الحساب">
         <input type="number" id="orderQty" placeholder="الكمية (أقل حد 20)" oninput="calcPrice()">
         <div class="price-box">الإجمالي: <span id="totalPrice">0.00</span>$</div>
@@ -193,7 +187,6 @@
     const auth = firebase.auth(), db = firebase.firestore();
     let currentUserBalance = 0, isSpinning = false;
 
-    // --- قسم تعديل الأسعار لكل خدمة ولكل منصة ---
     const servicePrices = {
         "تيك توك - متابعين": 0.90,
         "تيك توك - لايكات": 0.50,
@@ -214,6 +207,33 @@
         "مجاني": 0.00
     };
 
+    function updateServiceList() {
+        const platform = document.getElementById('platform').value;
+        const serviceSelect = document.getElementById('serviceType');
+        serviceSelect.innerHTML = "";
+        
+        const services = ["متابعين", "لايكات", "مشاهدات"];
+        
+        services.forEach(s => {
+            const key = `${platform} - ${s}`;
+            if(servicePrices[key]) {
+                const opt = document.createElement('option');
+                opt.value = s;
+                opt.innerText = `${s} (السعر لكل 1000: $${servicePrices[key]})`;
+                serviceSelect.appendChild(opt);
+            }
+        });
+
+        if(platform === "تيك توك") {
+            const optFree = document.createElement('option');
+            optFree.value = "مجاني";
+            optFree.innerText = "🎁 1000 مشاهدة تيك توك (مجاناً)";
+            serviceSelect.appendChild(optFree);
+        }
+        
+        calcPrice();
+    }
+
     function calcPrice() {
         const platform = document.getElementById('platform').value;
         const service = document.getElementById('serviceType').value;
@@ -225,11 +245,13 @@
         }
 
         const priceKey = `${platform} - ${service}`;
-        const rate = servicePrices[priceKey] || 1.00; // السعر الافتراضي 1 إذا لم يوجد مفتاح
+        const rate = servicePrices[priceKey] || 1.00; 
         
         document.getElementById('totalPrice').innerText = ((qty / 1000) * rate).toFixed(2);
     }
-    // ------------------------------------------
+
+    // تشغيل القائمة لأول مرة
+    updateServiceList();
 
     function startFakeOrders() {
         setInterval(() => {

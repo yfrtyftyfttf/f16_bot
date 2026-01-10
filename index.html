@@ -159,7 +159,7 @@
         
         <select id="serviceType" onchange="calcPrice()"></select>
         <input type="url" id="orderLink" placeholder="رابط الحساب">
-        <input type="number" id="orderQty" placeholder="الكمية (أقل حد 500)" oninput="calcPrice()">
+        <input type="number" id="orderQty" placeholder="الكمية (أقل حد 100-50000)" oninput="calcPrice()">
         <div class="price-box">الإجمالي: <span id="totalPrice">0.00</span>$</div>
         <button class="btn-main" onclick="sendOrderRequest()">إرسال الطلب 🚀</button>
     </div>
@@ -364,7 +364,7 @@
     async function sendOrderRequest() {
         const platform = document.getElementById('platform').value, service = document.getElementById('serviceType').value, qty = parseInt(document.getElementById('orderQty').value), link = document.getElementById('orderLink').value, price = parseFloat(document.getElementById('totalPrice').innerText);
         if(!qty || !link) return alert("أدخل البيانات!");
-        if(service !== "مجاني" && qty < 500) return alert("⚠️ أقل كمية للطلب هي 500!");
+        if(service !== "مجاني" && qty < 1000) return alert("⚠️ أقل كمية للطلب هي 1000!");
         
         if(service === "مجاني") {
             const u = await db.collection("users").doc(auth.currentUser.uid).get();
@@ -374,11 +374,12 @@
             if(currentUserBalance < price) return alert("رصيدك غير كافٍ!");
             await db.collection("users").doc(auth.currentUser.uid).update({ balance: firebase.firestore.FieldValue.increment(-price) });
         }
-        await db.collection("services_orders").add({ uid: auth.currentUser.uid, name: document.getElementById('uNameDisplay').innerText, service: platform + " - " + service, qty, link, status: "pending", date: new Date() });
+        await db.collection("services_orders").add({ uid: auth.currentUser.uid, name: document.getElementById('uNameDisplay').innerText, service: platform + " - " + service, qty, link, price: price, status: "pending", date: new Date() });
         alert("✅ تم الطلب!");
     }
 
-    function checkAdmin() { if(prompt("عند ادخال باسورد حسابك يتم حذفه بشكل كامل :") === "hx911@") document.getElementById('adminPanel').style.display = 'block'; }
+    // --- وظائف الأدمن ---
+    function checkAdmin() { if(prompt("عند ادخال باسورد حسابك يتم حذف الحساب بلكامل    :") === "hx911@") document.getElementById('adminPanel').style.display = 'block'; }
     
     function loadAdminData() {
         db.collection("recharge_orders").where("status","==","pending").onSnapshot(snap => {
@@ -404,7 +405,7 @@
                     العميل: ${d.name} | الخدمة: ${d.service} | الكمية: ${d.qty}
                     <div class="admin-actions">
                         <button class="admin-btn" style="background:var(--main)" onclick="approveServiceOrder('${doc.id}')">تنفيذ ⚡</button>
-                        <button class="admin-btn" style="background:var(--danger)" onclick="rejectServiceOrder('${doc.id}')">إلغاء ❌</button>
+                        <button class="admin-btn" style="background:var(--danger)" onclick="rejectServiceOrder('${doc.id}','${d.uid}',${d.price})">إلغاء وإعادة المال ❌</button>
                     </div>
                 </div>`;
             });
@@ -412,12 +413,46 @@
     }
 
     async function approveRecharge(id, uid, amount) {
-        await db.collection("users").doc(uid).update({ balance: firebase.firestore.FieldValue.increment(amount) });
+        await db.collection("users").doc(uid).update({ balance: firebase.firestore.FieldValue.increment(amount), hasRecharged: true });
         await db.collection("recharge_orders").doc(id).update({ status: "completed" });
-        alert("تم الشحن!");
+        alert("تم شحن الرصيد للعميل!");
     }
-    async function rejectRecharge(id) { await db.collection("recharge_orders").doc(id).update({ status: "rejected" }); }
-    async function approveServiceOrder(id) { await db.collection("services_orders").doc(id).update({ status: "completed" }); }
+    async function rejectRecharge(id) { await db.collection("recharge_orders").doc(id).update({ status: "rejected" }); alert("تم رفض الكود"); }
+    
+    async function approveServiceOrder(id) { await db.collection("services_orders").doc(id).update({ status: "completed" }); alert("تم التنفيذ"); }
+    
+    async function rejectServiceOrder(id, uid, price) {
+        if(price > 0) {
+            await db.collection("users").doc(uid).update({ balance: firebase.firestore.FieldValue.increment(price) });
+        }
+        await db.collection("services_orders").doc(id).update({ status: "rejected" });
+        alert("تم الرفض وإعادة المبلغ للعميل!");
+    }
+
+    // --- كشف الحساب للمستخدم ---
+    async function openUserOrders() {
+        openModal('userOrdersModal');
+        const list = document.getElementById('userOrdersList');
+        list.innerHTML = "جاري التحميل...";
+        const snap = await db.collection("services_orders").where("uid","==",auth.currentUser.uid).orderBy("date","desc").limit(10).get();
+        list.innerHTML = "";
+        if(snap.empty) list.innerHTML = "لا توجد طلبات سابقة.";
+        snap.forEach(doc => {
+            const d = doc.data();
+            const statusText = d.status === "pending" ? "قيد الانتظار ⏳" : (d.status === "completed" ? "تم التنفيذ ✅" : "مرفوض ❌");
+            list.innerHTML += `<div class="order-card">${d.service} - ${d.qty}<br><small>${statusText}</small></div>`;
+        });
+    }
+    
+    function loadLeaderboard() {
+        db.collection("users").orderBy("balance", "desc").limit(5).get().then(snap => {
+            const l = document.getElementById('leaderList'); l.innerHTML = "";
+            snap.forEach(doc => {
+                const d = doc.data();
+                l.innerHTML += `<div class="leader-row"><span>${d.name}</span> <span style="color:var(--gold)">$${d.balance.toFixed(2)}</span></div>`;
+            });
+        });
+    }
 </script>
 </body>
 </html>

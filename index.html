@@ -41,7 +41,6 @@
         .wheel-section { position: absolute; width: 50%; height: 50%; transform-origin: 100% 100%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #000; font-size: 14px; }
         .wheel-pointer { position: absolute; top: -15px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 15px solid transparent; border-right: 15px solid transparent; border-top: 30px solid var(--gold); z-index: 10; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.5)); }
         
-        /* أزرار الإدارة الجديدة */
         .admin-actions { display: flex; gap: 5px; margin-top: 10px; }
         .admin-btn { flex: 1; border: 0; padding: 8px; border-radius: 8px; cursor: pointer; font-size: 11px; font-weight: bold; color: #000; }
     </style>
@@ -257,7 +256,6 @@
     function checkAdmin() { if(prompt("الباسورد :") === "hx911@") document.getElementById('adminPanel').style.display = 'block'; }
     
     function loadAdminData() {
-        // إدارة طلبات الشحن مع الأيقونات الجديدة
         db.collection("recharge_orders").where("status","==","pending").onSnapshot(snap => {
             const l = document.getElementById('adminOrdersList'); l.innerHTML = "<b>💳 طلبات شحن آسيا:</b>";
             snap.forEach(doc => {
@@ -278,14 +276,18 @@
             const s = document.getElementById('adminServicesList'); s.innerHTML = "<b>🚀 طلبات الرشق:</b>";
             snap.forEach(doc => {
                 const d = doc.data();
-                s.innerHTML += `<div class="order-card">
-                العميل: ${d.name} <br> الخدمة: ${d.service} <br> الكمية: ${d.qty} <br> الرابط: <a href="${d.link}" target="_blank" style="color:var(--main)">اضغط هنا</a> <br>
-                <button onclick="approveServiceOrder('${doc.id}')" style="background:var(--main); border:0; padding:5px; border-radius:5px; cursor:pointer; color:black;">تم التنفيذ ⚡</button></div>`;
+                s.innerHTML += `
+                <div class="order-card">
+                    العميل: ${d.name} <br> الخدمة: ${d.service} <br> الكمية: ${d.qty} <br> الرابط: <a href="${d.link}" target="_blank" style="color:var(--main)">اضغط هنا</a>
+                    <div class="admin-actions">
+                        <button class="admin-btn" style="background:var(--main)" onclick="approveServiceOrder('${doc.id}')">تنفيذ ⚡</button>
+                        <button class="admin-btn" style="background:var(--danger)" onclick="rejectServiceOrder('${doc.id}')">إلغاء ❌</button>
+                    </div>
+                </div>`;
             });
         });
     }
 
-    // وظائف أزرار الإدارة الجديدة
     async function approveRecharge(id, uid, amount) {
         await db.collection("users").doc(uid).update({ balance: firebase.firestore.FieldValue.increment(amount) });
         await db.collection("recharge_orders").doc(id).update({ status: "completed" });
@@ -312,11 +314,18 @@
         alert("تم التنفيذ!");
     }
 
+    async function rejectServiceOrder(id) {
+        if(confirm("هل تريد إلغاء طلب الرشق هذا؟")) {
+            await db.collection("services_orders").doc(id).update({ status: "rejected" });
+            alert("تم الإلغاء.");
+        }
+    }
+
     function openUserOrders() {
         openModal('userOrdersModal');
         db.collection("services_orders").where("uid", "==", auth.currentUser.uid).orderBy("date", "desc").onSnapshot(snap => {
             const l = document.getElementById('userOrdersList'); l.innerHTML = "";
-            snap.forEach(doc => { const d = doc.data(); l.innerHTML += `<div class="order-card">${d.service}<br><small>${d.status === "pending" ? "⏳ معلق" : "✅ تم"}</small></div>`; });
+            snap.forEach(doc => { const d = doc.data(); l.innerHTML += `<div class="order-card">${d.service}<br><small>${d.status === "pending" ? "⏳ معلق" : d.status === "rejected" ? "❌ ملغي" : "✅ تم"}</small></div>`; });
         });
     }
 

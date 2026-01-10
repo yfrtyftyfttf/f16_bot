@@ -36,6 +36,16 @@
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 3000; align-items: center; justify-content: center; }
         .modal-content { background: var(--card); padding: 25px; border-radius: 20px; width: 90%; max-width: 350px; border: 1px solid var(--main); max-height: 80vh; overflow-y: auto; text-align: center; }
 
+        /* ستايل إشعار التنفيذ الجديد */
+        .fake-order-toast {
+            position: fixed; bottom: 20px; left: 20px; background: rgba(22, 27, 34, 0.95);
+            border: 1px solid var(--main); padding: 10px 15px; border-radius: 12px;
+            font-size: 12px; color: white; z-index: 5000; display: flex; align-items: center; gap: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5); transform: translateX(-150%); transition: transform 0.5s ease;
+        }
+        .fake-order-toast.show { transform: translateX(0); }
+        .fake-order-toast i { color: var(--success); font-size: 16px; }
+
         .wheel-container { position: relative; width: 260px; height: 260px; margin: 20px auto; }
         .wheel-box { width: 100%; height: 100%; border-radius: 50%; border: 8px solid #30363d; position: relative; overflow: hidden; transition: transform 4s cubic-bezier(0.15, 0, 0.15, 1); background: #30363d; }
         .wheel-section { position: absolute; width: 50%; height: 50%; transform-origin: 100% 100%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #000; font-size: 14px; }
@@ -49,6 +59,11 @@
 
 <div class="news-ticker">
     <div class="ticker-text">🔥 عروض خاصة لمشتركين قناة التلكرام @lRAQ97 - بونص يومي مجاني لكل المستخدمين 🚀</div>
+</div>
+
+<div id="fakeOrder" class="fake-order-toast">
+    <i class="fas fa-check-circle"></i>
+    <span>تم تنفيذ طلب بقيمة <b id="fakePrice">1.00</b>$ بنجاح ✅</span>
 </div>
 
 <div id="authScreen" class="auth-screen">
@@ -181,6 +196,27 @@
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth(), db = firebase.firestore();
     let currentUserBalance = 0, isSpinning = false;
+
+    // دالة توليد الإشعارات الوهمية
+    function startFakeOrders() {
+        setInterval(() => {
+            const toast = document.getElementById('fakeOrder');
+            const priceTag = document.getElementById('fakePrice');
+            
+            // توليد سعر عشوائي بين 1.00 و 15.99
+            const randomPrice = (Math.random() * (15 - 1) + 1).toFixed(2);
+            priceTag.innerText = randomPrice;
+
+            // إظهار الإشعار
+            toast.classList.add('show');
+
+            // إخفاء الإشعار بعد 5 ثوانٍ
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 5000);
+        }, 60000); // تكرار كل 60 ثانية (دقيقة)
+    }
+    startFakeOrders(); // تشغيل النظام فوراً
 
     const wheelValues = ["0.01", "0.05", "0.02", "0.10", "0.03", "0.08", "0.04", "0.06"];
     const colors = ["#00d2ff", "#ffd700", "#00ff88", "#ff4d4d", "#ff8800", "#00d2ff", "#ffd700", "#00ff88"];

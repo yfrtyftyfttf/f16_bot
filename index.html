@@ -147,7 +147,7 @@
         <select id="serviceType" onchange="calcPrice()">
             </select>
         <input type="url" id="orderLink" placeholder="رابط الحساب">
-        <input type="number" id="orderQty" placeholder="الكمية (أقل حد 20)" oninput="calcPrice()">
+        <input type="number" id="orderQty" placeholder="الكمية (أقل حد 100)" oninput="calcPrice()">
         <div class="price-box">الإجمالي: <span id="totalPrice">0.00</span>$</div>
         <button class="btn-main" onclick="sendOrderRequest()">إرسال الطلب 🚀</button>
     </div>
@@ -166,9 +166,13 @@
     <div class="modal-content">
         <h3 style="color:var(--main)">تعريف الموقع</h3>
         <p style="line-height:1.6">
-            الاسم: محمد احمد <br>
-            السكن: العراق <br>
-            احد طلبة هندسة برمجيات يرحب بكم <br><br>
+            موقع مختص برشق الحسابات بارخص الاسعار    <br>
+            تم تطوير الموقع لغرض توفير خدمات موثوقه
+             تم تطوير الموقع بكل احتراف والمحافظه على امن معلوماتك ورصيد حساب <br>
+           
+            مدير الموقع  Mohamed Ahmed
+            احد طلبت الامن السيبراني  <br>
+            <br>
             للتواصل مع مدير الموقع: <br>
             <a href="https://t.me/lRAQ888" style="color:var(--main)">@lRAQ888</a>
         </p>
@@ -358,7 +362,7 @@
     async function sendOrderRequest() {
         const platform = document.getElementById('platform').value, service = document.getElementById('serviceType').value, qty = parseInt(document.getElementById('orderQty').value), link = document.getElementById('orderLink').value, price = parseFloat(document.getElementById('totalPrice').innerText);
         if(!qty || !link) return alert("أدخل البيانات!");
-        if(service !== "مجاني" && qty < 20) return alert("⚠️ أقل كمية للطلب هي 20!");
+        if(service !== "مجاني" && qty < 100) return alert("⚠️ أقل كمية للطلب هي 100!");
         if(service === "مجاني") {
             const u = await db.collection("users").doc(auth.currentUser.uid).get();
             if(u.data().usedFree) return alert("استخدمت المجاني مسبقاً!");

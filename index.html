@@ -107,12 +107,22 @@
             <option>تيك توك</option>
             <option>انستا</option>
             <option>تليجرام</option>
+            <option>يوتيوب</option>
+            <option>فيسبوك</option>
+            <option>تويتر (X)</option>
+            <option>سناب شات</option>
+            <option>كواي</option>
         </select>
         <select id="serviceType" onchange="calcPrice()">
             <option value="متابعين">متابعين ($1.00 / 1000)</option>
             <option value="لايكات">لايكات ($0.25 / 1000)</option>
             <option value="مشاهدات">مشاهدات ($0.10 / 1000)</option>
             <option value="مجاني">🎁 1000 مشاهدة تيك توك (مجاناً)</option>
+            <option disabled>──────────</option>
+            <option value="قريبا" disabled>تعليقات (يتم تفعيل الخدمة عن قريب)</option>
+            <option value="قريبا" disabled>تصويت مسابقات (يتم تفعيل الخدمة عن قريب)</option>
+            <option value="قريبا" disabled>متابعين حقيقيين (يتم تفعيل الخدمة عن قريب)</option>
+            <option value="قريبا" disabled>ساعات مشاهدة يوتيوب (يتم تفعيل الخدمة عن قريب)</option>
         </select>
         <input type="url" id="orderLink" placeholder="رابط الحساب">
         <input type="number" id="orderQty" placeholder="الكمية (أقل حد 20)" oninput="calcPrice()">

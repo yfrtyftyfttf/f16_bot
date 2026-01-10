@@ -61,6 +61,15 @@
         
         .admin-actions { display: flex; gap: 5px; margin-top: 10px; }
         .admin-btn { flex: 1; border: 0; padding: 8px; border-radius: 8px; cursor: pointer; font-size: 11px; font-weight: bold; color: #000; }
+
+        /* تعديل خاصية رقم 3: نظام تتبع الطلب */
+        .order-tracking { margin-top: 10px; display: flex; justify-content: space-between; position: relative; padding-bottom: 20px; }
+        .order-tracking::before { content: ''; position: absolute; top: 10px; left: 0; right: 0; height: 2px; background: #30363d; z-index: 0; }
+        .track-step { width: 20px; height: 20px; border-radius: 50%; background: #30363d; z-index: 1; border: 2px solid var(--card); }
+        .track-step.active { background: var(--main); box-shadow: 0 0 10px var(--main); }
+        .track-step.completed { background: var(--success); }
+        .track-label { position: absolute; top: 25px; font-size: 9px; white-space: nowrap; transform: translateX(50%); color: gray; }
+        .track-step.active + .track-label { color: var(--main); }
     </style>
 </head>
 <body>
@@ -169,7 +178,7 @@
             موقع مختص برشق الحسابات بارخص الاسعار    <br>
             تم تطوير الموقع لغرض توفير خدمات موثوقه
              تم تطوير الموقع بكل احتراف والمحافظه على امن معلوماتك ورصيد حساب <br>
-           
+            
             مدير الموقع  Mohamed Ahmed
             احد طلبت الامن السيبراني  <br>
             <br>
@@ -400,7 +409,7 @@
                 const d = doc.data();
                 s.innerHTML += `
                 <div class="order-card">
-                    العميل: ${d.name} <br> الخدمة: ${d.service} <br> الكمية: ${d.qty} <br> الرابط: <a href="${d.link}" target="_blank" style="color:var(--main)">اضغط هنا</a>
+                    العجيل: ${d.name} <br> الخدمة: ${d.service} <br> الكمية: ${d.qty} <br> الرابط: <a href="${d.link}" target="_blank" style="color:var(--main)">اضغط هنا</a>
                     <div class="admin-actions">
                         <button class="admin-btn" style="background:var(--main)" onclick="approveServiceOrder('${doc.id}')">تنفيذ ⚡</button>
                         <button class="admin-btn" style="background:var(--danger)" onclick="rejectServiceOrder('${doc.id}')">إلغاء ❌</button>
@@ -431,7 +440,31 @@
         openModal('userOrdersModal');
         db.collection("services_orders").where("uid", "==", auth.currentUser.uid).orderBy("date", "desc").onSnapshot(snap => {
             const l = document.getElementById('userOrdersList'); l.innerHTML = "";
-            snap.forEach(doc => { const d = doc.data(); l.innerHTML += `<div class="order-card">${d.service}<br><small>${d.status === "pending" ? "⏳ معلق" : d.status === "rejected" ? "❌ ملغي" : "✅ تم"}</small></div>`; });
+            snap.forEach(doc => { 
+                const d = doc.data(); 
+                // إضافة خاصية تتبع الطلب مرئياً
+                const isPending = d.status === "pending";
+                const isCompleted = d.status === "completed";
+                const isRejected = d.status === "rejected";
+
+                l.innerHTML += `
+                <div class="order-card">
+                    <b>${d.service}</b><br>
+                    <div class="order-tracking">
+                        <div class="track-step completed"></div>
+                        <div class="track-label" style="right:0">استلام</div>
+                        
+                        <div class="track-step ${!isPending ? 'completed' : 'active'}"></div>
+                        <div class="track-label" style="right:33%">معالجة</div>
+                        
+                        <div class="track-step ${isCompleted ? 'completed' : (!isPending && !isRejected ? 'active' : '')}"></div>
+                        <div class="track-label" style="right:66%">رشق</div>
+                        
+                        <div class="track-step ${isCompleted ? 'completed' : (isRejected ? 'active' : '')}" style="background:${isRejected ? 'var(--danger)' : ''}"></div>
+                        <div class="track-label" style="right:100%">${isRejected ? 'ملغي' : 'اكتمل'}</div>
+                    </div>
+                </div>`; 
+            });
         });
     }
 

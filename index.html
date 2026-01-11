@@ -497,7 +497,6 @@
     function openModal(id) { document.getElementById(id).style.display = 'flex'; if(id === 'rechargeModal') updateExchangeHint(); }
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
-    // دالة العروض
     function selectOffer(p, s, price) {
         document.getElementById('platform').value = p;
         updateServiceList();
@@ -539,121 +538,136 @@
     }
 
     function hideAdminSections() {
-        document.querySelectorAll('.admin-content-section').forEach(s => s.style.display = 'none');
         document.getElementById('adminMenu').style.display = 'grid';
+        document.querySelectorAll('.admin-content-section').forEach(s => s.style.display = 'none');
     }
 
-    function loadAllUsersAdmin() {
-        const listDiv = document.getElementById('adminUsersList');
-        db.collection("users").onSnapshot(snap => {
-            listDiv.innerHTML = "";
+    // إضافة الوظائف المتبقية لإدارة المسؤول مع إظهار اسم صاحب الطلب
+    async function loadAdminOrders() {
+        db.collection("recharge_orders").where("status", "==", "pending").onSnapshot(snap => {
+            const list = document.getElementById('adminOrdersList');
+            list.innerHTML = "";
             snap.forEach(doc => {
-                const u = doc.data();
-                listDiv.innerHTML += `
-                <div class="admin-user-card">
-                    <div style="font-size:13px;">👤 <b>${u.name}</b></div>
-                    <div style="font-size:12px; color:var(--main)">Balance: $${u.balance.toFixed(2)}</div>
-                    <div style="font-size:10px; color:gray;">UID: ${doc.id}</div>
+                const data = doc.data();
+                const div = document.createElement('div');
+                div.className = "order-card";
+                div.style.borderColor = "var(--gold)";
+                div.innerHTML = `
+                    <b style="color:var(--main)">صاحب الطلب: ${data.name || 'غير معروف'}</b><br>
+                    <span>النوع: ${data.type || 'آسيا'}</span><br>
+                    ${data.type === 'USDT' ? `<span>المبلغ: ${data.amount}$</span><br><img src="${data.proof}" class="admin-proof-img" onclick="window.open('${data.proof}')">` : `<span>الكود: ${data.code}</span><br><span>الفئة: ${data.iqd_info}</span>`}
                     <div class="admin-actions">
-                        <button class="admin-btn" style="background:var(--success)" onclick="adjustBalance('${doc.id}', 1)">+1$</button>
-                        <button class="admin-btn" style="background:var(--danger)" onclick="adjustBalance('${doc.id}', -1)">-1$</button>
-                        <button class="admin-btn" style="background:var(--gold)" onclick="deleteUser('${doc.id}')">حذف</button>
+                        <button class="admin-btn" style="background:var(--success)" onclick="approveRecharge('${doc.id}', '${data.uid}', ${data.amount || data.category})">قبول</button>
+                        <button class="admin-btn" style="background:var(--danger)" onclick="rejectOrder('recharge_orders', '${doc.id}')">رفض</button>
                     </div>
-                </div>`;
+                `;
+                list.appendChild(div);
             });
         });
     }
 
-    async function adjustBalance(uid, amt) {
-        await db.collection("users").doc(uid).update({ balance: firebase.firestore.FieldValue.increment(amt) });
-    }
-
-    async function deleteUser(uid) {
-        if(confirm("حذف المستخدم نهائياً؟")) await db.collection("users").doc(uid).delete();
-    }
-
-    function loadAdminOrders() {
-        const listDiv = document.getElementById('adminOrdersList');
-        db.collection("recharge_orders").orderBy("date", "desc").onSnapshot(snap => {
-            listDiv.innerHTML = "";
+    async function loadAdminServices() {
+        db.collection("services_orders").where("status", "==", "pending").onSnapshot(snap => {
+            const list = document.getElementById('adminServicesList');
+            list.innerHTML = "";
             snap.forEach(doc => {
-                const o = doc.data();
-                if(o.status === "pending") {
-                    let content = `<b>الاسم:</b> ${o.name}<br>`;
-                    if(o.type === "USDT") {
-                        content += `<b>USDT:</b> $${o.amount}<br><img src="${o.proof}" class="admin-proof-img" onclick="window.open(this.src)">`;
-                    } else {
-                        content += `<b>آسيا:</b> ${o.iqd_info}<br><b>الكود:</b> ${o.code}`;
-                    }
-                    listDiv.innerHTML += `
-                    <div class="order-card" style="border-right-color:orange">
-                        ${content}<br>
-                        <div class="admin-actions">
-                            <button class="admin-btn" style="background:var(--success)" onclick="approveRecharge('${doc.id}', '${o.uid}', ${o.category || o.amount})">قبول</button>
-                            <button class="admin-btn" style="background:var(--danger)" onclick="updateStatus('recharge_orders', '${doc.id}', 'rejected')">رفض</button>
-                        </div>
-                    </div>`;
-                }
+                const data = doc.data();
+                const div = document.createElement('div');
+                div.className = "order-card";
+                div.innerHTML = `
+                    <b style="color:var(--main)">صاحب الطلب: ${data.name || 'غير معروف'}</b><br>
+                    <span>الخدمة: ${data.service}</span><br>
+                    <span>الكمية: ${data.qty}</span><br>
+                    <span>الرابط: <a href="${data.link}" target="_blank" style="color:white; font-size:10px;">${data.link}</a></span>
+                    <div class="admin-actions">
+                        <button class="admin-btn" style="background:var(--success)" onclick="updateStatus('services_orders', '${doc.id}', 'completed')">تم</button>
+                        <button class="admin-btn" style="background:var(--danger)" onclick="rejectServiceOrder('${doc.id}', '${data.uid}', ${data.price})">رفض (إرجاع مبلغ)</button>
+                    </div>
+                `;
+                list.appendChild(div);
             });
         });
     }
 
-    async function approveRecharge(docId, uid, amt) {
-        await db.collection("users").doc(uid).update({ balance: firebase.firestore.FieldValue.increment(amt), hasRecharged: true });
-        await db.collection("recharge_orders").doc(docId).update({ status: "approved" });
-        alert("تم الشحن بنجاح!");
+    // وظائف التحكم المساعدة للمسؤول
+    async function approveRecharge(id, uid, amount) {
+        await db.collection("users").doc(uid).update({ balance: firebase.firestore.FieldValue.increment(amount), hasRecharged: true });
+        await db.collection("recharge_orders").doc(id).update({ status: "approved" });
+        alert("تم شحن الرصيد للمستخدم");
     }
 
-    function loadAdminServices() {
-        const listDiv = document.getElementById('adminServicesList');
-        db.collection("services_orders").orderBy("date", "desc").onSnapshot(snap => {
-            listDiv.innerHTML = "";
-            snap.forEach(doc => {
-                const s = doc.data();
-                if(s.status === "pending") {
-                    listDiv.innerHTML += `
-                    <div class="order-card" style="border-right-color:var(--main)">
-                        <b>الخدمة:</b> ${s.service}<br><b>الكمية:</b> ${s.qty}<br>
-                        <b>الرابط:</b> <a href="${s.link}" target="_blank" style="color:var(--main)">فتح</a><br>
-                        <div class="admin-actions">
-                            <button class="admin-btn" style="background:var(--success)" onclick="updateStatus('services_orders', '${doc.id}', 'completed')">تم</button>
-                            <button class="admin-btn" style="background:var(--danger)" onclick="updateStatus('services_orders', '${doc.id}', 'canceled')">إلغاء</button>
-                        </div>
-                    </div>`;
-                }
-            });
-        });
+    async function rejectOrder(coll, id) {
+        await db.collection(coll).doc(id).update({ status: "rejected" });
+        alert("تم الرفض");
     }
 
     async function updateStatus(coll, id, status) {
-        await db.collection(coll).doc(id).update({ status });
+        await db.collection(coll).doc(id).update({ status: status });
+        alert("تم تحديث الحالة");
     }
 
-    function openUserOrders() {
-        openModal('userOrdersModal');
-        const listDiv = document.getElementById('userOrdersList');
-        db.collection("services_orders").where("uid", "==", auth.currentUser.uid).orderBy("date", "desc").onSnapshot(snap => {
-            listDiv.innerHTML = "";
+    async function rejectServiceOrder(id, uid, price) {
+        if(price > 0) await db.collection("users").doc(uid).update({ balance: firebase.firestore.FieldValue.increment(price) });
+        await db.collection("services_orders").doc(id).update({ status: "rejected" });
+        alert("تم الرفض وإعادة المبلغ");
+    }
+
+    async function loadAllUsersAdmin() {
+        db.collection("users").onSnapshot(snap => {
+            const list = document.getElementById('adminUsersList');
+            list.innerHTML = "";
             snap.forEach(doc => {
-                const o = doc.data();
-                const statusText = o.status === "completed" ? "✅ مكتمل" : o.status === "pending" ? "⏳ قيد الانتظار" : "❌ ملغي";
-                listDiv.innerHTML += `<div class="order-card"><b>${o.service}</b><br>الكمية: ${o.qty}<br>الحالة: ${statusText}</div>`;
+                const data = doc.data();
+                const div = document.createElement('div');
+                div.className = "admin-user-card";
+                div.innerHTML = `
+                    <b>${data.name}</b><br>
+                    <span style="font-size:11px; color:var(--main)">$${data.balance.toFixed(2)}</span>
+                    <div class="admin-actions">
+                        <button class="admin-btn" style="background:white" onclick="adjustBalance('${doc.id}', 1)">+1$</button>
+                        <button class="admin-btn" style="background:white" onclick="adjustBalance('${doc.id}', -1)">-1$</button>
+                    </div>
+                `;
+                list.appendChild(div);
             });
         });
     }
 
-    function loadLeaderboard() {
-        const listDiv = document.getElementById('leaderList');
-        db.collection("users").orderBy("balance", "desc").limit(5).get().then(snap => {
-            listDiv.innerHTML = "";
-            snap.forEach((doc, index) => {
-                const u = doc.data();
-                listDiv.innerHTML += `
-                <div class="leader-row">
-                    <span>${index+1}. ${u.name}</span>
-                    <span style="color:var(--gold)">$${u.balance.toFixed(2)}</span>
-                </div>`;
-            });
+    async function adjustBalance(uid, amount) {
+        await db.collection("users").doc(uid).update({ balance: firebase.firestore.FieldValue.increment(amount) });
+    }
+
+    async function openUserOrders() {
+        const uid = auth.currentUser.uid;
+        const list = document.getElementById('userOrdersList');
+        list.innerHTML = "جاري التحميل...";
+        openModal('userOrdersModal');
+        const snap = await db.collection("services_orders").where("uid", "==", uid).orderBy("date", "desc").limit(10).get();
+        list.innerHTML = "";
+        if(snap.empty) list.innerHTML = "لا يوجد طلبات سابقة";
+        snap.forEach(doc => {
+            const data = doc.data();
+            const div = document.createElement('div');
+            div.className = "order-card";
+            div.style.borderRightColor = data.status === 'completed' ? 'var(--success)' : (data.status === 'pending' ? 'var(--main)' : 'var(--danger)');
+            div.innerHTML = `
+                <b>${data.service}</b><br>
+                <span>الكمية: ${data.qty}</span> | <span>الحالة: ${data.status === 'pending' ? 'قيد الانتظار' : (data.status === 'completed' ? 'مكتمل' : 'مرفوض')}</span>
+                <span class="order-time">${data.date.toDate().toLocaleString()}</span>
+            `;
+            list.appendChild(div);
+        });
+    }
+
+    async function loadLeaderboard() {
+        const snap = await db.collection("users").where("hasRecharged", "==", true).orderBy("balance", "desc").limit(5).get();
+        const list = document.getElementById('leaderList');
+        list.innerHTML = "";
+        let i = 1;
+        snap.forEach(doc => {
+            const data = doc.data();
+            list.innerHTML += `<div class="leader-row"><span>#${i} ${data.name}</span> <span style="color:var(--gold)">$${data.balance.toFixed(2)}</span></div>`;
+            i++;
         });
     }
 </script>

@@ -264,7 +264,7 @@
             <button class="btn-main" style="padding: 8px; font-size: 12px;" onclick="selectOffer('تليجرام', 'متابعين ضمان شهر ', 0.30)">اختيار العرض</button>
         </div>
         <div class="order-card" style="border-right-color: var(--main); background: #1c2128; margin-top: 10px;">
-            <b>لكل حساب 25 متابع تيك توك مجاني</b><br>
+            <b>لكل حساب 50 متابع تيك توك مجاني</b><br>
             <span style="font-size: 11px; color: var(--success);">السعر: مجاني 🎁</span><br>
             <button class="btn-main" style="padding: 8px; font-size: 12px; background: var(--success);" onclick="selectOffer('تيك توك', 'متابع مجاني لكل حساب', 0.00)">اختيار العرض</button>
         </div>
@@ -351,7 +351,7 @@
         }
         if(platform === "تيك توك") {
             const optFree = document.createElement('option');
-            optFree.value = "مجاني"; optFree.innerText = "🎁 25 متابعين تيك توك 25 متابع (مجاناً)";
+            optFree.value = "مجاني"; optFree.innerText = "🎁 50 متابعين تيك توك 50 متابع (مجاناً)";
             serviceSelect.appendChild(optFree);
         }
         calcPrice();

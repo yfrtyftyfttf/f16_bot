@@ -1,1121 +1,950 @@
 <!DOCTYPE html>
-
 <html lang="ar" dir="rtl">
-
 <head>
-
     <meta charset="UTF-8">
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>Dark Followers</title>
-
+    <title>Dark Followers | النسخة الكاملة</title>
+    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
-
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 
-
-
     <style>
-
-        :root { --main: #00d2ff; --bg: #0a0b0e; --card: #161b22; --text: #c9d1d9; --success: #00ff88; --gold: #ffd700; --danger: #ff4d4d; }
-
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; direction: rtl; overflow-x: hidden; }
-
-        
-
-        .menu-icon { position: fixed; top: 15px; left: 15px; z-index: 3001; font-size: 24px; color: var(--main); cursor: pointer; display: none; }
-
-        .side-menu { position: fixed; top: 0; left: -250px; width: 250px; height: 100%; background: var(--card); z-index: 4000; transition: 0.3s; padding-top: 60px; border-right: 1px solid #30363d; box-shadow: 5px 0 15px rgba(0,0,0,0.5); }
-
-        .side-menu.active { left: 0; }
-
-        .side-menu-item { padding: 15px 20px; border-bottom: 1px solid #30363d; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: 0.2s; }
-
-        .side-menu-item:hover { background: #1c2128; color: var(--main); }
-
-        .menu-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 3999; display: none; }
-
-
-
-        .news-ticker { background: linear-gradient(90deg, #00d2ff, #0080ff); color: #000; padding: 8px 0; font-weight: bold; font-size: 13px; white-space: nowrap; overflow: hidden; }
-
-        .ticker-text { display: inline-block; padding-left: 100%; animation: ticker 25s linear infinite; }
-
-        @keyframes ticker { 0% { transform: translate(0, 0); } 100% { transform: translate(100%, 0); } }
-
-        
-
-        .container { max-width: 450px; margin: auto; display: none; padding: 15px; }
-
-        .auth-screen { position: fixed; inset: 0; background: var(--bg); z-index: 2000; display: flex; justify-content: center; align-items: center; padding: 20px; }
-
-        .auth-card { background: var(--card); padding: 30px; border-radius: 20px; width: 100%; max-width: 350px; border: 1px solid #30363d; text-align: center; }
-
-        
-
-        .user-header { background: var(--card); padding: 20px; border-radius: 20px; border: 1px solid #30363d; margin-bottom: 15px; text-align: center; }
-
-        .user-header h2 { color: var(--main); margin: 5px 0; font-size: 32px; }
-
-        .id-badge { display: inline-block; margin-top: 10px; padding: 5px 15px; background: #0d1117; border-radius: 12px; border: 1px solid #30363d; font-size: 13px; color: #888; }
-
-
-
-        .section { background: var(--card); padding: 20px; border-radius: 20px; border: 1px solid #30363d; margin-bottom: 15px; }
-
-        .leaderboard { background: #1c2128; border: 1px solid var(--gold); padding: 15px; border-radius: 20px; margin-bottom: 15px; }
-
-        .leader-row { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #333; font-size: 14px; }
-
-        
-
-        .btn-main { background: var(--main); color: #000; border: none; padding: 15px; width: 100%; border-radius: 12px; font-weight: bold; cursor: pointer; margin-top: 10px; }
-
-        .btn-gold { background: var(--gold); color: #000; border: none; padding: 10px; border-radius: 10px; font-weight: bold; cursor: pointer; width: 100%; margin-bottom: 10px; }
-
-        
-
-        .action-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; margin-bottom: 15px; }
-
-        .action-btn { background: var(--card); padding: 15px 5px; border-radius: 15px; border: 1px solid #30363d; text-align: center; cursor: pointer; font-size: 11px; font-weight: bold; }
-
-        .action-btn i { display: block; font-size: 22px; margin-bottom: 8px; color: var(--main); }
-
-        
-
-        input, select { width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 10px; border: 1px solid #30363d; background: #0d1117; color: white; box-sizing: border-box; }
-
-        .price-box { background: #1f2937; padding: 15px; border-radius: 12px; text-align: center; font-weight: bold; color: var(--success); border: 1px dashed var(--success); }
-
-        .task-item { background: #0d1117; padding: 10px; border-radius: 10px; margin-top: 10px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
-
-        .order-card { background: #0d1117; padding: 12px; border-radius: 12px; margin-bottom: 10px; border-right: 4px solid var(--main); text-align: right; }
-
-        
-
-        #adminPanel { display: none; background: #161b22; border: 2px solid var(--main); padding: 15px; border-radius: 20px; margin-top: 20px; }
-
-        .admin-choices { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 10px; }
-
-        .choice-card { background: #0d1117; border: 1px solid #30363d; padding: 20px 10px; border-radius: 15px; text-align: center; cursor: pointer; transition: 0.3s; }
-
-        .choice-card:hover { border-color: var(--main); background: #1c2128; }
-
-        .choice-card i { font-size: 30px; color: var(--main); margin-bottom: 10px; display: block; }
-
-        .choice-card span { font-size: 13px; font-weight: bold; }
-
-        .full-width { grid-column: span 2; }
-
-        
-
-        .admin-content-section { display: none; margin-top: 20px; border-top: 1px solid #333; padding-top: 15px; }
-
-        .back-btn { background: #333; color: white; border: none; padding: 5px 15px; border-radius: 5px; cursor: pointer; font-size: 12px; margin-bottom: 10px; }
-
-
-
-        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 3000; align-items: center; justify-content: center; }
-
-        .modal-content { background: var(--card); padding: 25px; border-radius: 20px; width: 90%; max-width: 350px; border: 1px solid var(--main); max-height: 80vh; overflow-y: auto; text-align: center; }
-
-
-
-        .platform-container { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; background: #0d1117; padding: 5px 12px; border-radius: 10px; border: 1px solid #30363d; }
-
-        .platform-icon { font-size: 20px; color: var(--main); }
-
-
-
-        .fake-order-toast {
-
-            position: fixed; bottom: 20px; left: 20px; background: rgba(22, 27, 34, 0.95);
-
-            border: 1px solid var(--main); padding: 10px 15px; border-radius: 12px;
-
-            font-size: 12px; color: white; z-index: 5000; display: flex; align-items: center; gap: 10px;
-
-            box-shadow: 0 5px 15px rgba(0,0,0,0.5); transform: translateX(-150%); transition: transform 0.5s ease;
-
+        /* نظام الألوان والمتغيرات */
+        :root {
+            --main: #00d2ff;
+            --bg: #0a0b0e;
+            --card: #161b22;
+            --text: #c9d1d9;
+            --success: #00ff88;
+            --gold: #ffd700;
+            --danger: #ff4d4d;
+            --border: #30363d;
+            --dark-gray: #0d1117;
         }
 
-        .fake-order-toast.show { transform: translateX(0); }
-
-        .fake-order-toast i { color: var(--success); font-size: 16px; }
-
-
-
-        .admin-actions { display: flex; gap: 5px; margin-top: 10px; flex-wrap: wrap; }
-
-        .admin-btn { flex: 1; border: 0; padding: 8px; border-radius: 8px; cursor: pointer; font-size: 11px; font-weight: bold; color: #000; min-width: 60px; }
-
-
-
-        .referral-box { background: #0d1117; padding: 15px; border-radius: 12px; margin-top: 15px; border: 1px solid #30363d; }
-
-        .referral-link { font-size: 11px; color: var(--main); word-break: break-all; background: #000; padding: 10px; border-radius: 8px; display: block; margin-top: 8px; cursor: pointer; border: 1px solid #333; }
-
-        
-
-        .admin-user-card { background: #0d1117; padding: 12px; border-radius: 12px; margin-bottom: 10px; border: 1px solid #333; text-align: right; }
-
-        .order-time { font-size: 10px; color: #888; display: block; margin-top: 5px; }
-
-
-
-        .crypto-box { background: #0d1117; padding: 15px; border-radius: 12px; border: 1px solid var(--main); margin-top: 10px; }
-
-        .usdt-address { font-size: 10px; color: var(--success); background: #000; padding: 10px; display: block; border-radius: 5px; margin: 10px 0; word-break: break-all; }
-
-        .upload-proof { background: #1c2128; border: 1px dashed #555; padding: 10px; border-radius: 10px; cursor: pointer; display: block; margin: 10px 0; font-size: 12px; }
-
-        #proofPreview { width: 100%; max-height: 150px; object-fit: contain; margin-top: 10px; display: none; border-radius: 10px; }
-
-
-
-        .admin-proof-img { width: 100%; max-width: 200px; border-radius: 10px; border: 1px solid var(--main); margin-top: 10px; cursor: pointer; }
-
-
-
-        .delete-confirm-card {
-
-            background: #0d1117;
-
-            border: 1.5px solid #ff4d4d;
-
-            border-radius: 20px;
-
-            padding: 20px;
-
-            color: white;
-
-            text-align: center;
-
+        /* الإعدادات العامة للجسم */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 0;
+            direction: rtl;
+            overflow-x: hidden;
         }
 
-        .delete-header {
-
-            color: #ff4d4d;
-
-            font-size: 20px;
-
+        /* شريط الأخبار المتحرك */
+        .news-ticker {
+            background: linear-gradient(90deg, #00d2ff, #0080ff);
+            color: #000;
+            padding: 10px 0;
             font-weight: bold;
-
-            display: flex;
-
-            align-items: center;
-
-            justify-content: center;
-
-            gap: 10px;
-
-            margin-bottom: 15px;
-
-        }
-
-        .delete-warning-box {
-
-            background: rgba(255, 77, 77, 0.1);
-
-            border-right: 4px solid #ff4d4d;
-
-            padding: 15px;
-
-            border-radius: 10px;
-
-            margin-bottom: 20px;
-
-            text-align: right;
-
             font-size: 14px;
-
+            white-space: nowrap;
+            overflow: hidden;
+            position: relative;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
         }
 
-        .delete-btn {
+        .ticker-text {
+            display: inline-block;
+            padding-left: 100%;
+            animation: ticker 20s linear infinite;
+        }
 
-            background: #ff4d4d;
+        @keyframes ticker {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(100%, 0); }
+        }
 
-            color: white;
-
-            border: none;
-
-            padding: 12px;
-
-            width: 100%;
-
-            border-radius: 12px;
-
-            font-weight: bold;
-
-            font-size: 16px;
-
+        /* القائمة الجانبية */
+        .menu-icon {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 3001;
+            font-size: 26px;
+            color: var(--main);
             cursor: pointer;
-
-            display: flex;
-
-            align-items: center;
-
-            justify-content: center;
-
-            gap: 8px;
-
+            display: none;
+            background: var(--card);
+            padding: 8px;
+            border-radius: 50%;
+            border: 1px solid var(--border);
         }
 
+        .side-menu {
+            position: fixed;
+            top: 0;
+            left: -280px;
+            width: 280px;
+            height: 100%;
+            background: var(--card);
+            z-index: 4000;
+            transition: all 0.4s ease-in-out;
+            padding-top: 80px;
+            border-right: 2px solid var(--main);
+            box-shadow: 10px 0 30px rgba(0,0,0,0.7);
+        }
+
+        .side-menu.active {
+            left: 0;
+        }
+
+        .side-menu-item {
+            padding: 18px 25px;
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 16px;
+            transition: 0.3s;
+        }
+
+        .side-menu-item:hover {
+            background: var(--dark-gray);
+            color: var(--main);
+            padding-right: 35px;
+        }
+
+        .menu-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 3999;
+            display: none;
+            backdrop-filter: blur(5px);
+        }
+
+        /* الحاويات الرئيسية */
+        .container {
+            max-width: 480px;
+            margin: 20px auto;
+            display: none;
+            padding: 15px;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* شاشة تسجيل الدخول */
+        .auth-screen {
+            position: fixed;
+            inset: 0;
+            background: var(--bg);
+            z-index: 2000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .auth-card {
+            background: var(--card);
+            padding: 40px 30px;
+            border-radius: 25px;
+            width: 100%;
+            max-width: 380px;
+            border: 1px solid var(--border);
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        }
+
+        /* ترويسة المستخدم */
+        .user-header {
+            background: var(--card);
+            padding: 30px 20px;
+            border-radius: 25px;
+            border: 1px solid var(--border);
+            margin-bottom: 20px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .user-header h2 {
+            color: var(--main);
+            margin: 10px 0;
+            font-size: 36px;
+            text-shadow: 0 0 15px rgba(0, 210, 255, 0.3);
+        }
+
+        .id-badge {
+            display: inline-block;
+            margin-top: 12px;
+            padding: 6px 18px;
+            background: var(--dark-gray);
+            border-radius: 15px;
+            border: 1px solid var(--border);
+            font-size: 14px;
+            color: #aaa;
+        }
+
+        /* الأقسام والأزرار */
+        .section {
+            background: var(--card);
+            padding: 25px;
+            border-radius: 25px;
+            border: 1px solid var(--border);
+            margin-bottom: 20px;
+        }
+
+        .btn-main {
+            background: linear-gradient(135deg, var(--main), #0080ff);
+            color: #000;
+            border: none;
+            padding: 16px;
+            width: 100%;
+            border-radius: 15px;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: 0.3s;
+        }
+
+        .btn-main:active {
+            transform: scale(0.95);
+        }
+
+        /* لوحة المتصدرين */
+        .leaderboard {
+            background: linear-gradient(180deg, #1c2128, #161b22);
+            border: 1px solid var(--gold);
+            padding: 20px;
+            border-radius: 25px;
+            margin-bottom: 20px;
+        }
+
+        .leader-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 5px;
+            border-bottom: 1px solid #333;
+            font-size: 15px;
+        }
+
+        /* شبكة الإجراءات */
+        .action-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .action-btn {
+            background: var(--card);
+            padding: 18px 5px;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            text-align: center;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .action-btn:hover {
+            border-color: var(--main);
+            background: var(--dark-gray);
+        }
+
+        .action-btn i {
+            display: block;
+            font-size: 24px;
+            margin-bottom: 10px;
+            color: var(--main);
+        }
+
+        /* المدخلات */
+        input, select {
+            width: 100%;
+            padding: 14px;
+            margin-bottom: 15px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            background: var(--dark-gray);
+            color: #fff;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+
+        .price-box {
+            background: rgba(0, 255, 136, 0.1);
+            padding: 18px;
+            border-radius: 15px;
+            text-align: center;
+            font-weight: bold;
+            color: var(--success);
+            border: 1px dashed var(--success);
+            font-size: 18px;
+        }
+
+        /* طلبات الأدمين والمستخدم */
+        .order-card {
+            background: var(--dark-gray);
+            padding: 15px;
+            border-radius: 15px;
+            margin-bottom: 12px;
+            border-right: 5px solid var(--main);
+            text-align: right;
+            position: relative;
+        }
+
+        .status-badge {
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 11px;
+            position: absolute;
+            left: 10px;
+            top: 10px;
+        }
+
+        /* لوحة التحكم للأدمن */
+        #adminPanel {
+            display: none;
+            background: var(--card);
+            border: 2px solid var(--main);
+            padding: 20px;
+            border-radius: 25px;
+            margin-top: 30px;
+            box-shadow: 0 0 30px rgba(0, 210, 255, 0.2);
+        }
+
+        .admin-choices {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .choice-card {
+            background: var(--dark-gray);
+            border: 1px solid var(--border);
+            padding: 25px 10px;
+            border-radius: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .choice-card i {
+            font-size: 32px;
+            color: var(--main);
+            margin-bottom: 12px;
+            display: block;
+        }
+
+        .admin-content-section {
+            display: none;
+            margin-top: 25px;
+            border-top: 1px solid var(--border);
+            padding-top: 20px;
+        }
+
+        /* المودالات */
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.9);
+            z-index: 5000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            backdrop-filter: blur(8px);
+        }
+
+        .modal-content {
+            background: var(--card);
+            padding: 30px;
+            border-radius: 25px;
+            width: 100%;
+            max-width: 400px;
+            border: 1px solid var(--main);
+            max-height: 85vh;
+            overflow-y: auto;
+            text-align: center;
+        }
+
+        /* التنبيهات */
+        .fake-order-toast {
+            position: fixed;
+            bottom: 25px;
+            left: 25px;
+            background: rgba(22, 27, 34, 0.98);
+            border: 1px solid var(--main);
+            padding: 12px 20px;
+            border-radius: 15px;
+            font-size: 13px;
+            color: white;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transform: translateX(-200%);
+            transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .fake-order-toast.show {
+            transform: translateX(0);
+        }
     </style>
-
 </head>
-
 <body>
 
-
-
 <div id="menuIcon" class="menu-icon" onclick="toggleSideMenu(true)"><i class="fas fa-bars"></i></div>
-
 <div id="menuOverlay" class="menu-overlay" onclick="toggleSideMenu(false)"></div>
 
 <div id="sideMenu" class="side-menu">
-
-    <div class="side-menu-item" onclick="window.location.href='https://t.me/lRAQ97'"><i class="fab fa-telegram-plane"></i> تواصل مع فريق الدعم</div>
-
-    <div class="side-menu-item" onclick="toggleSideMenu(false); openUserOrders();"><i class="fas fa-history"></i> كشف حساب</div>
-
-    <div class="side-menu-item" onclick="openAboutOwner()"><i class="fas fa-user-circle"></i> تعريف الموقع</div>
-
-    <div class="side-menu-item" onclick="openAdminConfirm()" style="color: var(--danger); font-weight: bold; border-top: 1px solid #30363d; margin-top: 10px;">
-
-        <i class="fas fa-user-shield"></i> حذف الحساب
-
+    <div class="side-menu-item" onclick="window.location.href='https://t.me/lRAQ97'"><i class="fab fa-telegram-plane"></i> قناة التحديثات</div>
+    <div class="side-menu-item" onclick="toggleSideMenu(false); openUserOrders();"><i class="fas fa-history"></i> سجل طلباتي</div>
+    <div class="side-menu-item" onclick="openAboutOwner()"><i class="fas fa-info-circle"></i> معلومات الموقع</div>
+    <div class="side-menu-item" onclick="window.location.href='https://t.me/lRAQ97'"><i class="fas fa-headset"></i> الدعم المباشر</div>
+    <div class="side-menu-item" onclick="openAdminConfirm()" style="color: var(--danger); margin-top: 20px; border-top: 1px solid var(--border);">
+        <i class="fas fa-user-shield"></i> لوحة الإدارة
     </div>
-
+    <div class="side-menu-item" onclick="firebase.auth().signOut()"><i class="fas fa-sign-out-alt"></i> تسجيل الخروج</div>
 </div>
-
-
 
 <div class="news-ticker">
-
-    <div class="ticker-text">🔥 عروض خاصة لمشتركين قناة التلكرام @lRAQ97 - بونص يومي مجاني لكل المستخدمين 🚀</div>
-
+    <div class="ticker-text">🔥 تم تحديث أسعار تليجرام - بونص 10% عند الشحن بـ 25$ - تابعنا على @lRAQ97 ليصلك كل جديد 🚀</div>
 </div>
-
-
 
 <div id="fakeOrder" class="fake-order-toast">
-
-    <i class="fas fa-check-circle"></i>
-
-    <span>تم تنفيذ طلب بقيمة <b id="fakePrice">1.00</b>$ بنجاح ✅</span>
-
+    <i class="fas fa-check-circle" style="color: var(--success);"></i>
+    <span>تم اكتمال طلب بقيمة <b id="fakePrice">0.00</b>$ بنجاح ✅</span>
 </div>
-
-
 
 <div id="authScreen" class="auth-screen">
-
     <div class="auth-card" id="signupBox">
-
-        <h2>إنشاء حساب</h2>
-
+        <h2 style="color: var(--main); margin-bottom: 25px;">إنشاء حساب جديد</h2>
         <input type="text" id="newName" placeholder="الاسم الكامل">
-
         <input type="email" id="newEmail" placeholder="البريد الإلكتروني">
-
         <input type="password" id="newPass" placeholder="كلمة المرور">
-
-        <button class="btn-main" onclick="handleSignup()">ابدأ الآن 🚀</button>
-
-        <p onclick="toggleAuth(false)" style="cursor:pointer; font-size:14px; margin-top:10px;">لديك حساب؟ دخول</p>
-
+        <button class="btn-main" onclick="handleSignup()">إنشاء الحساب 🚀</button>
+        <p onclick="toggleAuth(false)" style="cursor:pointer; font-size:14px; margin-top:15px; color: #888;">لديك حساب؟ <span style="color: var(--main);">دخول</span></p>
     </div>
-
+    
     <div class="auth-card" id="loginBox" style="display: none;">
-
-        <h2>تسجيل دخول</h2>
-
+        <h2 style="color: var(--main); margin-bottom: 25px;">تسجيل الدخول</h2>
         <input type="email" id="logEmail" placeholder="البريد الإلكتروني">
-
         <input type="password" id="logPass" placeholder="كلمة المرور">
-
         <button class="btn-main" onclick="handleLogin()">دخول 🔑</button>
-
-        <p onclick="toggleAuth(true)" style="cursor:pointer; font-size:14px; margin-top:10px;">جديد هنا؟ سجل الآن</p>
-
+        <p onclick="toggleAuth(true)" style="cursor:pointer; font-size:14px; margin-top:15px; color: #888;">مستخدم جديد؟ <span style="color: var(--main);">سجل الآن</span></p>
     </div>
-
 </div>
-
-
 
 <div class="container" id="dashboard">
-
-    <div id="userNotifications"></div>
-
-
-
+    
     <div class="leaderboard">
-
-        <h4 style="margin:0 0 10px 0; color:var(--gold); text-align:center;"><i class="fas fa-crown"></i> كبار الممولين</h4>
-
+        <h4 style="margin:0 0 15px 0; color:var(--gold); text-align:center;"><i class="fas fa-crown"></i> كبار الممولين هذا الأسبوع</h4>
         <div id="leaderList"></div>
-
     </div>
-
-
 
     <div class="user-header">
-
-        <div id="uNameDisplay" style="font-weight: bold; font-size: 18px;">...</div>
-
+        <div id="uNameDisplay" style="font-weight: bold; font-size: 20px; color: #fff;">جاري التحميل...</div>
         <h2 id="uBalanceDisplay">$0.00</h2>
-
-        <div class="id-badge">ID: <span id="uIDDisplay">---</span></div>
-
+        <div class="id-badge">كود المستخدم: <span id="uIDDisplay">---</span></div>
     </div>
-
-
-
-    <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-
-        <button id="bonusBtn" class="btn-gold" style="flex: 1; margin:0;" onclick="claimDailyBonus()">🎁 بونص يومي</button>
-
-    </div>
-
-
 
     <div class="action-grid">
-
-        <div class="action-btn" onclick="openModal('rechargeChoiceModal')"><i class="fas fa-wallet"></i> شحن</div>
-
-        <div class="action-btn" onclick="openUserOrders()"><i class="fas fa-list-check"></i> طلباتي</div>
-
-        <div class="action-btn" onclick="openModal('offersModal')"><i class="fas fa-fire"></i> عروض مجانيه كل يوم</div>
-
-        <div class="action-btn" onclick="window.location.href='https://t.me/lRAQ97'"><i class="fab fa-telegram-plane"></i> الدعم</div>
-
+        <div class="action-btn" onclick="openModal('rechargeChoiceModal')"><i class="fas fa-wallet"></i><span>شحن</span></div>
+        <div class="action-btn" onclick="openUserOrders()"><i class="fas fa-tasks"></i><span>طلباتي</span></div>
+        <div class="action-btn" onclick="openModal('offersModal')"><i class="fas fa-gift"></i><span>عروض</span></div>
+        <div class="action-btn" onclick="window.location.href='https://t.me/lRAQ97'"><i class="fab fa-telegram-plane"></i><span>دعم</span></div>
     </div>
 
-
-
     <div class="section">
-
-        <h4 style="margin:0 0 10px 0;"><i class="fas fa-users"></i> برنامج الإحالة (اربح 0.50$)</h4>
-
-        <p style="font-size: 12px; color: gray;">شارك رابطك، وعندما يشحن صديقك حسابه ستحصل على 0.50$ هدية!</p>
-
-        <div class="referral-box">
-
-            <span style="font-size:12px; font-weight: bold;">رابط الإحالة الخاص بك:</span>
-
-            <div id="refLink" class="referral-link" onclick="copyRefLink()">جاري التحميل...</div>
-
+        <h4 style="margin-top:0;"><i class="fas fa-share-alt" style="color: var(--main);"></i> نظام الربح من الإحالة</h4>
+        <p style="font-size: 12px; color: #aaa;">اربح 0.50$ عن كل مستخدم يسجل ويشحن من خلال رابطك!</p>
+        <div id="refLink" style="font-size:11px; color:var(--main); background:#000; padding:12px; border-radius:10px; border:1px solid #333; word-break:break-all; cursor:pointer;" onclick="copyRefLink()">
+            جاري توليد الرابط...
         </div>
-
     </div>
 
-
-
     <div class="section">
-
-        <h4 style="margin:0 0 10px 0;"><i class="fas fa-gift"></i> هدايا ومهام</h4>
-
-        <input type="text" id="promoCode" placeholder="كود الخصم">
-
-        <button class="btn-main" style="padding:10px; margin-bottom:15px;" onclick="applyPromo()">تفعيل الكود</button>
-
-        <div class="task-item">
-
-            <span>انضم لقناتنا @lRAQ97</span>
-
-            <button id="t1Btn" onclick="claimTask(0.05, 't1')" style="background:var(--success); border:0; border-radius:5px; font-size:10px; padding:5px; color:black; font-weight: bold;">تم +$0.05</button>
-
-        </div>
-
-    </div>
-
-
-
-    <div class="section">
-
-        <div class="platform-container">
-
-            <i id="platformIcon" class="fab fa-tiktok platform-icon fa-beat"></i>
-
-            <select id="platform" onchange="updateServiceList()" style="margin-bottom:0; border:none;">
-
-                <option value="تيك توك">تيك توك</option>
-
-                <option value="انستا">انستا</option>
-
-                <option value="تليجرام">تليجرام</option>
-
-                <option value="يوتيوب">يوتيوب</option>
-
-                <option value="فيسبوك">فيسبوك</option>
-
-                <option value="تويتر (X)">تويتر (X)</option>
-
-                <option value="سناب شات">سناب شات</option>
-
-                <option value="كواي">كواي</option>
-
-            </select>
-
-        </div>
-
+        <h4 style="margin-top:0;"><i class="fas fa-shopping-cart" style="color: var(--main);"></i> طلب خدمة جديدة</h4>
         
-
+        <select id="platform" onchange="updateServiceList()">
+            <option value="تيك توك">تيك توك (TikTok)</option>
+            <option value="انستا">انستقرام (Instagram)</option>
+            <option value="تليجرام">تليجرام (Telegram)</option>
+            <option value="يوتيوب">يوتيوب (YouTube)</option>
+            <option value="فيسبوك">فيسبوك (Facebook)</option>
+        </select>
+        
         <select id="serviceType" onchange="calcPrice()"></select>
-
-        <input type="url" id="orderLink" placeholder="رابط الحساب">
-
-        <input type="number" id="orderQty" placeholder="الكمية (أقل حد 1000-50000)" oninput="calcPrice()">
-
-        <div class="price-box">الإجمالي: <span id="totalPrice">0.00</span>$</div>
-
-        <button class="btn-main" onclick="sendOrderRequest()">إرسال الطلب 🚀</button>
-
+        
+        <input type="url" id="orderLink" placeholder="ضع الرابط هنا (https://...)">
+        
+        <input type="number" id="orderQty" placeholder="الكمية المطلوبة" oninput="calcPrice()">
+        
+        <div class="price-box">
+            السعر الإجمالي: <span id="totalPrice">0.00</span>$
+        </div>
+        
+        <button class="btn-main" onclick="sendOrderRequest()">تأكيد وإرسال الطلب 🚀</button>
     </div>
-
-
 
     <div id="adminPanel">
-
-        <h3 style="color:var(--main); text-align:center;">لوحة المسؤول</h3>
-
-        <div id="adminMenu" class="admin-choices">
-
+        <h3 style="color:var(--main); text-align:center; margin-bottom: 20px;">لوحة تحكم المسؤول</h3>
+        <div class="admin-choices">
             <div class="choice-card" onclick="showAdminSection('rechargeOrdersSection')">
-
-                <i class="fas fa-money-bill-wave"></i>
-
+                <i class="fas fa-file-invoice-dollar"></i>
                 <span>طلبات الشحن</span>
-
             </div>
-
             <div class="choice-card" onclick="showAdminSection('serviceOrdersSection')">
-
-                <i class="fas fa-rocket"></i>
-
+                <i class="fas fa-paper-plane"></i>
                 <span>طلبات الرشق</span>
-
             </div>
-
-            <div class="choice-card full-width" onclick="showAdminSection('usersManagementSection')">
-
-                <i class="fas fa-user-shield"></i>
-
-                <span>إدارة المستخدمين</span>
-
+            <div class="choice-card" onclick="showAdminSection('usersManagementSection')" style="grid-column: span 2;">
+                <i class="fas fa-users-cog"></i>
+                <span>إدارة حسابات المستخدمين</span>
             </div>
-
         </div>
-
-
 
         <div id="rechargeOrdersSection" class="admin-content-section">
-
-            <button class="back-btn" onclick="hideAdminSections()">⬅ رجوع</button>
-
+            <button class="btn-main" style="background:#444; margin-bottom:15px; padding:10px;" onclick="hideAdminSections()">⬅ العودة</button>
             <div id="adminOrdersList"></div>
-
         </div>
-
-
 
         <div id="serviceOrdersSection" class="admin-content-section">
-
-            <button class="back-btn" onclick="hideAdminSections()">⬅ رجوع</button>
-
+            <button class="btn-main" style="background:#444; margin-bottom:15px; padding:10px;" onclick="hideAdminSections()">⬅ العودة</button>
             <div id="adminServicesList"></div>
-
         </div>
-
-
 
         <div id="usersManagementSection" class="admin-content-section">
-
-            <button class="back-btn" onclick="hideAdminSections()">⬅ رجوع</button>
-
-            <div id="adminUsersList">جاري التحميل...</div>
-
+            <button class="btn-main" style="background:#444; margin-bottom:15px; padding:10px;" onclick="hideAdminSections()">⬅ العودة</button>
+            <div id="adminUsersList">جاري تحميل المستخدمين...</div>
         </div>
-
-    </div>
-
-
-
-    <button onclick="firebase.auth().signOut()" style="background:none; border:none; color:gray; width:100%; margin-top:20px; cursor:pointer;">خروج من الحساب</button>
-
-</div>
-
-
-
-<div id="adminConfirmModal" class="modal">
-
-    <div class="modal-content" style="padding:0; border:none; background:transparent;">
-
-        <div class="delete-confirm-card">
-
-            <div class="delete-header">حذف الحساب <i class="fas fa-user-shield"></i></div>
-
-            <div class="delete-warning-box">ادخل كلمت مرور حسابك ليتم حذفه بشكل كامل.</div>
-
-            <input type="password" id="adminPassInput" placeholder="كلمة المرور" style="border:1.5px solid #30363d;">
-
-            <button class="btn-main" onclick="checkAdminPassword()">حذف</button>
-
-            <p onclick="closeModal('adminConfirmModal')" style="color:gray; cursor:pointer; margin-top:15px; font-size:14px;">إلغاء</p>
-
-        </div>
-
     </div>
 
 </div>
-
-
-
-<div id="rechargeChoiceModal" class="modal">
-
-    <div class="modal-content">
-
-        <h3>اختر وسيلة الشحن</h3>
-
-        <button class="btn-main" onclick="closeModal('rechargeChoiceModal'); openModal('rechargeModal')">كارت آسيا سيل</button>
-
-        <button class="btn-main" style="background:#26a17b; color:white;" onclick="closeModal('rechargeChoiceModal'); openModal('usdtModal')">USDT (العملات الرقمية)</button>
-
-        <button onclick="closeModal('rechargeChoiceModal')" class="btn-main" style="background:gray;">إغلاق</button>
-
-    </div>
-
-</div>
-
-
-
-<div id="usdtModal" class="modal">
-
-    <div class="modal-content">
-
-        <h3 style="color:#26a17b">شحن USDT (TRC20)</h3>
-
-        <div class="crypto-box">
-
-            <span style="font-size:12px;">حول المبلغ المحفظة أدناه:</span>
-
-            <code class="usdt-address" id="walletAddr">TPGGfPkejYKEKt6tkv7u9vY4XzDLmN4j2X</code>
-
-            <input type="number" id="usdtAmount" placeholder="المبلغ بالدولار $">
-
-            <label class="upload-proof">
-
-                <i class="fas fa-cloud-upload-alt"></i> ارفع صورة إثبات التحويل
-
-                <input type="file" id="proofInput" hidden accept="image/*" onchange="previewProof(this)">
-
-            </label>
-
-            <img id="proofPreview" alt="معاينة">
-
-        </div>
-
-        <button class="btn-main" style="background:#26a17b; color:white;" onclick="submitUsdtCharge()">إرسال الطلب</button>
-
-        <button onclick="closeModal('usdtModal')" class="btn-main" style="background:gray;">إلغاء</button>
-
-    </div>
-
-</div>
-
-
-
-<div id="offersModal" class="modal">
-
-    <div class="modal-content">
-
-        <h3 style="color:var(--gold)"><i class="fas fa-bolt"></i> عروض مجانيه كل يوم</h3>
-
-        <div class="order-card" style="border-right-color: var(--gold); background: #1c2128;">
-
-            <b>رشق متابعين تلكرام (ضمان شهر تعويض تلقائي )</b><br>
-
-            <span style="font-size: 11px; color: var(--success);">السعر: 0.30$ لكل 1000 متابع</span><br>
-
-            <button class="btn-main" style="padding: 8px; font-size: 12px;" onclick="selectOffer('تليجرام', 'متابعين ضمان شهر ', 0.30)">اختيار العرض</button>
-
-        </div>
-
-        <div class="order-card" style="border-right-color: var(--main); background: #1c2128; margin-top: 10px;">
-
-            <b>لكل حساب 50 متابع تيك توك مجاني</b><br>
-
-            <span style="font-size: 11px; color: var(--success);">السعر: مجاني 🎁</span><br>
-
-            <button class="btn-main" style="padding: 8px; font-size: 12px; background: var(--success);" onclick="selectOffer('تيك توك', 'مجاني', 0.00)">اختيار العرض</button>
-
-        </div>
-
-        <button onclick="closeModal('offersModal')" class="btn-main" style="background:gray; margin-top: 15px;">إغلاق</button>
-
-    </div>
-
-</div>
-
-
-
-<div id="aboutModal" class="modal"><div class="modal-content"><h3 style="color:var(--main)">تعريف الموقع</h3><p style="line-height:1.6">موقع مختص برشق الحسابات بارخص الاسعار<br>مدير الموقع Mohamed Ahmed<br><a href="https://t.me/lRAQ888" style="color:var(--main)">@lRAQ888</a></p><button onclick="closeModal('aboutModal')" class="btn-main">إغلاق</button></div></div>
-
-<div id="userOrdersModal" class="modal"><div class="modal-content"><h3>سجل طلباتي</h3><div id="userOrdersList"></div><button onclick="closeModal('userOrdersModal')" class="btn-main" style="background:gray;">إغلاق</button></div></div>
-
-
 
 <div id="rechargeModal" class="modal">
-
     <div class="modal-content">
-
-        <h3> شحن رصيد آسيا ويتم تحويله الى الدولار الصرف يكون مقابل قيمة الرصيد</h3>
-
-        <p style="font-size: 11px; color: var(--main); margin-bottom: 10px;">اختر فئة الكارت لرؤية القيمة بالدولار</p>
-
-        <select id="cardCategory" onchange="updateExchangeHint()">
-
-            <option value="5000">كارت 5,000 د.ع</option>
-
-            <option value="10000">كارت 10,000 د.ع</option>
-
-            <option value="15000">كارت 15,000 د.ع</option>
-
-            <option value="25000">كارت 25,000 د.ع</option>
-
+        <h3 style="color: var(--main);">شحن بواسطة آسيا سيل</h3>
+        <p style="font-size: 13px; color: #888;">يرجى اختيار فئة الكارت وإدخال الكود</p>
+        <select id="cardCategory">
+            <option value="5000">كارت 5,000 د.ع -> رصيد $2.50</option>
+            <option value="10000">كارت 10,000 د.ع -> رصيد $5.00</option>
+            <option value="15000">كارت 15,000 د.ع -> رصيد $7.50</option>
+            <option value="25000">كارت 25,000 د.ع -> رصيد $12.50</option>
         </select>
-
-        <div id="exchangeHint" style="background: #0d1117; padding: 10px; border-radius: 10px; margin-bottom: 10px; border: 1px dashed var(--main); font-weight: bold;">
-
-            تحصل على: <span style="color: var(--success);">$2.50</span> في حسابك
-
-        </div>
-
-        <input type="text" id="asiaCode" placeholder="كود الكارت">
-
-        <button class="btn-main" onclick="submitRecharge()">إرسال الكود</button>
-
-        <button onclick="closeModal('rechargeModal')" style="background:none; border:none; color:red; margin-top:10px; cursor:pointer;">إلغاء</button>
-
+        <input type="text" id="asiaCode" placeholder="أدخل كود التعبئة المكون من 14 رقم">
+        <button class="btn-main" onclick="submitRecharge()">إرسال الطلب للمراجعة</button>
+        <button onclick="closeModal('rechargeModal')" style="background:none; border:none; color:var(--danger); margin-top:15px; cursor:pointer;">إلغاء</button>
     </div>
-
 </div>
 
+<div id="offersModal" class="modal">
+    <div class="modal-content">
+        <h3 style="color: var(--gold);"><i class="fas fa-bolt"></i> عروض اليوم المجانية</h3>
+        <div class="order-card" style="border-color: var(--success); cursor: pointer;" onclick="selectOffer('تيك توك', 'مجاني', 0.00)">
+            <b>هدية: 50 متابع تيك توك مجاني</b><br>
+            <small>هذا العرض متاح مرة واحدة فقط لكل حساب</small>
+            <div style="color: var(--success); margin-top: 5px; font-weight: bold;">السعر: $0.00</div>
+        </div>
+        <button onclick="closeModal('offersModal')" class="btn-main" style="background: #444;">إغلاق النافذة</button>
+    </div>
+</div>
 
+<div id="adminConfirmModal" class="modal">
+    <div class="modal-content">
+        <h3 style="color: var(--danger);">تحقق أمني</h3>
+        <p>يرجى إدخال رمز الوصول للوحة الإدارة</p>
+        <input type="password" id="adminPassInput" placeholder="كلمة المرور">
+        <button class="btn-main" onclick="checkAdminPassword()">دخول النظام</button>
+        <button onclick="closeModal('adminConfirmModal')" style="background:none; border:none; color:#888; margin-top:10px; cursor:pointer;">رجوع</button>
+    </div>
+</div>
+
+<div id="userOrdersModal" class="modal">
+    <div class="modal-content" style="max-width: 450px;">
+        <h3>سجل الطلبات الخاصة بك</h3>
+        <div id="userOrdersList" style="text-align: right;"></div>
+        <button onclick="closeModal('userOrdersModal')" class="btn-main">إغلاق</button>
+    </div>
+</div>
+
+<div id="aboutModal" class="modal">
+    <div class="modal-content">
+        <h3 style="color: var(--main);">Dark Followers SMM</h3>
+        <p style="font-size: 14px; line-height: 1.8;">الموقع الرسمي لخدمات التواصل الاجتماعي بارخص الاسعار.<br>إدارة: <b>Mohamed Ahmed</b><br>تليجرام: @lRAQ888</p>
+        <button onclick="closeModal('aboutModal')" class="btn-main">فهمت</button>
+    </div>
+</div>
+
+<div id="rechargeChoiceModal" class="modal">
+    <div class="modal-content">
+        <h3>اختر طريقة الشحن</h3>
+        <button class="btn-main" onclick="closeModal('rechargeChoiceModal'); openModal('rechargeModal')"><i class="fas fa-phone"></i> كارت آسيا سيل</button>
+        <button class="btn-main" style="background: #26a17b; color: white;" onclick="alert('خدمة USDT ستتوفر قريباً!')"><i class="fas fa-coins"></i> USDT (TRC20)</button>
+        <button onclick="closeModal('rechargeChoiceModal')" style="background:none; border:none; color:gray; margin-top:10px; cursor:pointer;">إغلاق</button>
+    </div>
+</div>
 
 <script>
-
+    // تكوين فايربيس
     const firebaseConfig = {
-
         apiKey: "AIzaSyDrLSVoJJsEzlmcIBvNNb9OJzWtJixYhpw",
-
         authDomain: "army-smm.firebaseapp.com",
-
         projectId: "army-smm",
-
         storageBucket: "army-smm.firebasestorage.app",
-
         messagingSenderId: "27268417960",
-
         appId: "1:27268417960:web:990e040e77a0c38a11f59d"
-
     };
 
     firebase.initializeApp(firebaseConfig);
-
-    const auth = firebase.auth(), db = firebase.firestore();
+    const auth = firebase.auth();
+    const db = firebase.firestore();
 
     let currentUserBalance = 0;
-
     const urlParams = new URLSearchParams(window.location.search);
-
     const refCode = urlParams.get('ref');
 
-
-
-    // UI التبديل
-
+    // وظائف الواجهة (UI)
     function toggleAuth(isSignup) {
-
         document.getElementById('signupBox').style.display = isSignup ? 'block' : 'none';
-
         document.getElementById('loginBox').style.display = isSignup ? 'none' : 'block';
-
     }
-
-
 
     function toggleSideMenu(open) {
-
         document.getElementById('sideMenu').classList.toggle('active', open);
-
         document.getElementById('menuOverlay').style.display = open ? 'block' : 'none';
-
         document.getElementById('menuIcon').style.display = open ? 'none' : 'block';
-
     }
-
-
-
-    function openAboutOwner() { toggleSideMenu(false); openModal('aboutModal'); }
 
     function openModal(id) { document.getElementById(id).style.display = 'flex'; }
-
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
-
+    function openAboutOwner() { toggleSideMenu(false); openModal('aboutModal'); }
     function openAdminConfirm() { toggleSideMenu(false); openModal('adminConfirmModal'); }
 
-
-
-    // التحقق من المسؤول
-
-    function checkAdminPassword() {
-
-        const pass = document.getElementById('adminPassInput').value;
-
-        if(pass === "hx911@") {
-
-            closeModal('adminConfirmPassword');
-
-            document.getElementById('adminPanel').style.display = 'block';
-
-            window.scrollTo(0, document.body.scrollHeight);
-
-            loadAdminData();
-
-        } else {
-
-            alert("⚠️ كلمة المرور خاطئة!");
-
-        }
-
-    }
-
-
-
-    // خدمات
-
+    // قاعدة بيانات الخدمات والأسعار
     const servicePrices = {
-
-        "تيك توك - متابعين": 0.30, "تيك توك - لايكات": 0.08, "تيك توك - مشاهدات": 0.01,
-
-        "انستا - متابعين": 0.50, "انستا - لايكات": 0.20, "انستا - مشاهدات": 0.02,
-
-        "تليجرام - متابعين": 0.10, "تليجرام - مشاهدات": 0.1,
-
-        "تليجرام - متابعين ضمان 30 يوم": 0.40,
-
-        "يوتيوب - متابعين": 0.40, "يوتيوب - لايكات": 0.50, "يوتيوب - مشاهدات": 0.50,
-
-        "فيسبوك - متابعين": 4.10, "فيسبوك - لايكات": 1.45,
-
-        "تويتر (X) - متابعين": 6.00, "سناب شات - متابعين": 6.50, "كواي - متابعين": 19.00,
-
-        "مجاني": 0.00
-
+        "تيك توك - متابعين": 0.35,
+        "تيك توك - لايكات": 0.12,
+        "تيك توك - مشاهدات": 0.02,
+        "تيك توك - مجاني": 0.00,
+        "انستا - متابعين": 0.45,
+        "انستا - لايكات": 0.15,
+        "تليجرام - متابعين": 0.25,
+        "تليجرام - مشاهدات": 0.05,
+        "يوتيوب - متابعين": 2.50,
+        "يوتيوب - ساعات": 4.00,
+        "فيسبوك - متابعين": 1.20
     };
-
-
-
-    const platformIcons = {
-
-        "تيك توك": "fab fa-tiktok", "انستا": "fab fa-instagram", "تليجرام": "fab fa-telegram",
-
-        "يوتيوب": "fab fa-youtube", "فيسبوك": "fab fa-facebook", "تويتر (X)": "fab fa-twitter",
-
-        "سناب شات": "fab fa-snapchat", "كواي": "fas fa-video"
-
-    };
-
-
 
     function updateServiceList() {
-
         const platform = document.getElementById('platform').value;
-
         const serviceSelect = document.getElementById('serviceType');
-
-        const iconElement = document.getElementById('platformIcon');
-
-        iconElement.className = (platformIcons[platform] || "fas fa-share-alt") + " platform-icon fa-beat";
-
         serviceSelect.innerHTML = "";
-
+        
         for (const key in servicePrices) {
-
-            if (key.startsWith(platform + " - ")) {
-
-                const s = key.replace(platform + " - ", "");
-
-                const opt = document.createElement('option');
-
-                opt.value = s;
-
-                opt.innerText = `${s} (السعر لكل 1000: $${servicePrices[key]})`;
-
-                serviceSelect.appendChild(opt);
-
+            if (key.startsWith(platform)) {
+                const serviceName = key.split(" - ")[1];
+                const option = document.createElement('option');
+                option.value = serviceName;
+                option.innerText = `${serviceName} ($${servicePrices[key]} لكل 1000)`;
+                serviceSelect.appendChild(option);
             }
-
         }
-
-        if(platform === "تيك توك") {
-
-            const optFree = document.createElement('option');
-
-            optFree.value = "مجاني"; optFree.innerText = "🎁 50 متابعين تيك توك (مجاناً)";
-
-            serviceSelect.appendChild(optFree);
-
-        }
-
         calcPrice();
-
     }
-
-
 
     function calcPrice() {
-
         const platform = document.getElementById('platform').value;
-
         const service = document.getElementById('serviceType').value;
-
         const qty = document.getElementById('orderQty').value || 0;
-
-        if(service === "مجاني") { document.getElementById('totalPrice').innerText = "0.00"; return; }
-
+        
+        if (service === "مجاني") {
+            document.getElementById('totalPrice').innerText = "0.00";
+            return;
+        }
+        
         const priceKey = `${platform} - ${service}`;
-
-        const rate = servicePrices[priceKey] || 1.00; 
-
-        document.getElementById('totalPrice').innerText = ((qty / 1000) * rate).toFixed(2);
-
+        const rate = servicePrices[priceKey] || 0;
+        const total = (qty / 1000) * rate;
+        document.getElementById('totalPrice').innerText = total.toFixed(2);
     }
 
-
-
-    // التعامل مع المستخدم والطلبات
-
+    // إدارة الحسابات والتوثيق
     auth.onAuthStateChanged(user => {
-
-        if(user) {
-
+        if (user) {
             document.getElementById('authScreen').style.display = 'none';
-
             document.getElementById('dashboard').style.display = 'block';
-
             document.getElementById('menuIcon').style.display = 'block';
-
+            
             db.collection("users").doc(user.uid).onSnapshot(doc => {
-
                 const data = doc.data();
-
-                currentUserBalance = data.balance || 0;
-
-                document.getElementById('uBalanceDisplay').innerText = `$${currentUserBalance.toFixed(2)}`;
-
-                document.getElementById('uNameDisplay').innerText = data.name;
-
-                document.getElementById('uIDDisplay').innerText = user.uid.substring(0,8);
-
-                document.getElementById('refLink').innerText = window.location.origin + window.location.pathname + "?ref=" + user.uid;
-
+                if (data) {
+                    currentUserBalance = data.balance || 0;
+                    document.getElementById('uBalanceDisplay').innerText = `$${currentUserBalance.toFixed(2)}`;
+                    document.getElementById('uNameDisplay').innerText = data.name;
+                    document.getElementById('uIDDisplay').innerText = user.uid.substring(0, 10);
+                    document.getElementById('refLink').innerText = window.location.origin + window.location.pathname + "?ref=" + user.uid;
+                }
             });
-
             updateServiceList();
-
-            startFakeOrders();
-
             loadLeaderboard();
-
+            startFakeOrders();
         } else {
-
             document.getElementById('authScreen').style.display = 'flex';
-
             document.getElementById('dashboard').style.display = 'none';
-
             document.getElementById('menuIcon').style.display = 'none';
-
         }
-
     });
 
-
-
     async function handleSignup() {
-
-        const name = document.getElementById('newName').value, email = document.getElementById('newEmail').value, pass = document.getElementById('newPass').value;
-
-        if(!name || !email || !pass) return alert("املا البيانات");
-
+        const name = document.getElementById('newName').value;
+        const email = document.getElementById('newEmail').value;
+        const pass = document.getElementById('newPass').value;
+        
+        if (!name || !email || !pass) return alert("يرجى ملء جميع الحقول!");
+        
         try {
-
             const res = await auth.createUserWithEmailAndPassword(email, pass);
-
-            await db.collection("users").doc(res.user.uid).set({ 
-
-                name, email, balance: 0, 
-
-                tasks: [], dailyBonus: 0, 
-
-                referredBy: refCode || null 
-
+            await db.collection("users").doc(res.user.uid).set({
+                name: name,
+                email: email,
+                balance: 0,
+                freeClaimed: false,
+                referrals: 0,
+                joinDate: new Date()
             });
-
-            if(refCode) {
-
-                await db.collection("users").doc(refCode).update({ 
-
-                    referrals: firebase.firestore.FieldValue.increment(1) 
-
+            
+            if (refCode && refCode !== res.user.uid) {
+                await db.collection("users").doc(refCode).update({
+                    referrals: firebase.firestore.FieldValue.increment(1)
                 });
-
             }
-
-        } catch(e) { alert(e.message); }
-
+        } catch (error) {
+            alert("خطأ في التسجيل: " + error.message);
+        }
     }
-
-
 
     async function handleLogin() {
-
-        const email = document.getElementById('logEmail').value, pass = document.getElementById('logPass').value;
-
-        try { await auth.signInWithEmailAndPassword(email, pass); } catch(e) { alert(e.message); }
-
+        const email = document.getElementById('logEmail').value;
+        const pass = document.getElementById('logPass').value;
+        try {
+            await auth.signInWithEmailAndPassword(email, pass);
+        } catch (error) {
+            alert("بيانات الدخول غير صحيحة!");
+        }
     }
 
-
-
-    // إرسال الطلب (مع شرط الجهاز الواحد للعرض المجاني)
-
+    // وظيفة إرسال طلب الرشق (مع حماية العرض المجاني)
     async function sendOrderRequest() {
-
         const platform = document.getElementById('platform').value;
-
         const service = document.getElementById('serviceType').value;
-
         const link = document.getElementById('orderLink').value;
-
         const qty = parseInt(document.getElementById('orderQty').value);
-
         const total = parseFloat(document.getElementById('totalPrice').innerText);
 
+        if (!link || isNaN(qty) || qty <= 0) return alert("يرجى إدخال الرابط والكمية بشكل صحيح!");
 
-
-        if(!link || !qty || qty < 100) return alert("يرجى إكمال البيانات بشكل صحيح!");
-
-        
-
-        // التحقق من العرض المجاني
-
+        // حماية العرض المجاني لكل حساب
         if (service === "مجاني") {
-
-            if (localStorage.getItem("free_claimed_device")) {
-
-                return alert("⚠️ نعتذر! لقد حصلت على العرض المجاني مسبقاً من هذا الجهاز.");
-
+            const userDoc = await db.collection("users").doc(auth.currentUser.uid).get();
+            if (userDoc.data().freeClaimed === true) {
+                return alert("⚠️ عذراً! لقد حصلت على العرض المجاني سابقاً من هذا الحساب.");
             }
-
         }
 
-
-
-        if(currentUserBalance < total) return alert("رصيدك غير كافٍ!");
-
-
+        if (currentUserBalance < total) return alert("رصيدك الحالي غير كافٍ، يرجى الشحن أولاً!");
 
         try {
-
-            await db.collection("users").doc(auth.currentUser.uid).update({
-
+            // خصم الرصيد وتحديث حالة العرض المجاني
+            const updateData = {
                 balance: firebase.firestore.FieldValue.increment(-total)
+            };
+            if (service === "مجاني") updateData.freeClaimed = true;
 
-            });
+            await db.collection("users").doc(auth.currentUser.uid).update(updateData);
 
+            // إضافة الطلب لقاعدة البيانات
             await db.collection("service_orders").add({
-
                 uid: auth.currentUser.uid,
-
                 userName: document.getElementById('uNameDisplay').innerText,
-
-                platform, service, link, qty, total,
-
-                status: "pending",
-
+                platform: platform,
+                service: service,
+                link: link,
+                qty: qty,
+                total: total,
+                status: "قيد المراجعة",
                 date: new Date()
-
             });
 
-
-
-            if (service === "مجاني") {
-
-                localStorage.setItem("free_claimed_device", "true");
-
-            }
-
-
-
-            alert("🚀 تم إرسال طلبك بنجاح وسيبدأ التنفيذ قريباً!");
-
-            document.getElementById('orderLink').value = "";
-
+            alert("🚀 تم إرسال طلبك بنجاح! سيتم التنفيذ خلال دقائق.");
             document.getElementById('orderQty').value = "";
-
-        } catch(e) { alert("حدث خطأ: " + e.message); }
-
+            document.getElementById('orderLink').value = "";
+        } catch (error) {
+            alert("حدث خطأ أثناء معالجة الطلب: " + error.message);
+        }
     }
 
-
-
-    // نظام الشحن والمهام
-
-    function updateExchangeHint() {
-
-        const category = document.getElementById('cardCategory').value;
-
-        const hintBox = document.querySelector('#exchangeHint span');
-
-        let dollar = category == "5000" ? 2.50 : category == "10000" ? 5.00 : category == "15000" ? 7.50 : 12.50;
-
-        hintBox.innerText = "$" + dollar.toFixed(2);
-
-    }
-
-
-
+    // وظيفة الشحن
     async function submitRecharge() {
+        const code = document.getElementById('asiaCode').value;
+        const category = document.getElementById('cardCategory').value;
+        
+        if (code.length < 10) return alert("يرجى إدخال كود تعبئة صحيح!");
 
-        const code = document.getElementById('asiaCode').value, categoryIQD = document.getElementById('cardCategory').value;
-
-        let dollarAmount = categoryIQD == "5000" ? 2.50 : categoryIQD == "10000" ? 5.00 : categoryIQD == "15000" ? 7.50 : 12.50;
-
-        if(!code) return alert("أدخل الكود");
-
-        await db.collection("recharge_orders").add({ 
-
-            uid: auth.currentUser.uid, name: document.getElementById('uNameDisplay').innerText, 
-
-            code, amount: parseFloat(dollarAmount), iqd_info: categoryIQD, type: "Asia", status: "pending", date: new Date() 
-
+        await db.collection("recharge_orders").add({
+            uid: auth.currentUser.uid,
+            name: document.getElementById('uNameDisplay').innerText,
+            code: code,
+            amount_iqd: category,
+            status: "معلق",
+            date: new Date()
         });
 
-        alert("✅ تم إرسال الكود للمراجعة."); closeModal('rechargeModal');
-
+        alert("✅ تم إرسال كود التعبئة! سيتم إضافة الرصيد بعد التحقق.");
+        closeModal('rechargeModal');
+        document.getElementById('asiaCode').value = "";
     }
 
+    // لوحة التحكم (وظائف الأدمن)
+    function checkAdminPassword() {
+        const pass = document.getElementById('adminPassInput').value;
+        if (pass === "hx911@") {
+            closeModal('adminConfirmModal');
+            document.getElementById('adminPanel').style.display = 'block';
+            loadAdminData();
+            window.scrollTo(0, document.body.scrollHeight);
+        } else {
+            alert("كلمة مرور خاطئة!");
+        }
+    }
 
+    function hideAdminSections() {
+        document.querySelectorAll('.admin-content-section').forEach(s => s.style.display = 'none');
+    }
 
-    async function submitUsdtCharge() {
+    function showAdminSection(id) {
+        hideAdminSections();
+        document.getElementById(id).style.display = 'block';
+    }
 
-        const amoun
+    function loadAdminData() {
+        // تحميل طلبات الشحن للأدمن
+        db.collection("recharge_orders").where("status", "==", "معلق").onSnapshot(snap => {
+            let html = "";
+            snap.forEach(doc => {
+                const d = doc.data();
+                html += `
+                    <div class="order-card" style="border-right-color: var(--gold);">
+                        <b>المستخدم: ${d.name}</b><br>
+                        الكود: <span style="color:var(--main)">${d.code}</span><br>
+                        الفئة: ${d.amount_iqd} د.ع<br>
+                        <button onclick="approveCharge('${doc.id}', '${d.uid}', ${d.amount_iqd})" style="background:var(--success); border:none; padding:5px 10px; border-radius:5px; margin-top:5px; cursor:pointer;">قبول ✅</button>
+                        <button onclick="rejectCharge('${doc.id}')" style="background:var(--danger); border:none; padding:5px 10px; border-radius:5px; margin-top:5px; cursor:pointer;">رفض ❌</button>
+                    </div>
+                `;
+            });
+            document.getElementById('adminOrdersList').innerHTML = html || "لا توجد طلبات معلقة حالياً.";
+        });
+
+        // تحميل المستخدمين للإدارة
+        db.collection("users").limit(10).get().then(snap => {
+            let html = "";
+            snap.forEach(doc => {
+                const d = doc.data();
+                html += `
+                    <div class="order-card">
+                        <b>${d.name}</b><br>
+                        الرصيد: $${d.balance.toFixed(2)}<br>
+                        إحالات: ${d.referrals || 0}<br>
+                        <button onclick="addBonus('${doc.id}')" style="background:var(--main); border:none; padding:3px 8px; border-radius:5px; font-size:10px;">إضافة بونص 1$</button>
+                    </div>
+                `;
+            });
+            document.getElementById('adminUsersList').innerHTML = html;
+        });
+    }
+
+    async function approveCharge(docId, uid, iqd) {
+        let dollar = iqd == 5000 ? 2.5 : iqd == 10000 ? 5.0 : iqd == 15000 ? 7.5 : 12.5;
+        await db.collection("users").doc(uid).update({ balance: firebase.firestore.FieldValue.increment(dollar) });
+        await db.collection("recharge_orders").doc(docId).update({ status: "تم الشحن" });
+        alert("تمت العملية بنجاح!");
+    }
+
+    async function rejectCharge(id) {
+        await db.collection("recharge_orders").doc(id).update({ status: "مرفوض" });
+    }
+
+    async function addBonus(uid) {
+        await db.collection("users").doc(uid).update({ balance: firebase.firestore.FieldValue.increment(1) });
+        alert("تمت إضافة 1$ بونص");
+        loadAdminData();
+    }
+
+    // وظائف إضافية تكميلية
+    function loadLeaderboard() {
+        db.collection("users").orderBy("balance", "desc").limit(5).get().then(snap => {
+            let html = "";
+            snap.forEach((doc, i) => {
+                const d = doc.data();
+                html += `<div class="leader-row"><span>#${i+1} ${d.name}</span> <span style="color:var(--gold)">$${d.balance.toFixed(2)}</span></div>`;
+            });
+            document.getElementById('leaderList').innerHTML = html;
+        });
+    }
+
+    function startFakeOrders() {
+        setInterval(() => {
+            if (Math.random() > 0.6) {
+                const amounts = ["0.50", "1.20", "5.00", "0.30", "10.00", "2.50"];
+                document.getElementById('fakePrice').innerText = amounts[Math.floor(Math.random()*amounts.length)];
+                const toast = document.getElementById('fakeOrder');
+                toast.classList.add('show');
+                setTimeout(() => toast.classList.remove('show'), 4000);
+            }
+        }, 12000);
+    }
+
+    function openUserOrders() {
+        db.collection("service_orders").where("uid", "==", auth.currentUser.uid).orderBy("date", "desc").limit(10).get().then(snap => {
+            let html = "";
+            snap.forEach(doc => {
+                const d = doc.data();
+                html += `
+                    <div class="order-card">
+                        <span class="status-badge" style="background:${d.status === 'قيد المراجعة' ? '#f39c12' : '#2ecc71'}">${d.status}</span>
+                        <b>${d.platform} - ${d.service}</b><br>
+                        الكمية: ${d.qty} | السعر: $${d.total.toFixed(2)}<br>
+                        <small style="font-size:10px; color:#666;">${d.date.toDate().toLocaleString()}</small>
+                    </div>
+                `;
+            });
+            document.getElementById('userOrdersList').innerHTML = html || "لا توجد طلبات سابقة.";
+            openModal('userOrdersModal');
+        });
+    }
+
+    function selectOffer(p, s, price) {
+        document.getElementById('platform').value = p;
+        updateServiceList();
+        document.getElementById('serviceType').value = s;
+        document.getElementById('orderQty').value = 50;
+        calcPrice();
+        closeModal('offersModal');
+    }
+
+    function copyRefLink() {
+        const link = document.getElementById('refLink').innerText;
+        navigator.clipboard.writeText(link).then(() => {
+            alert("تم نسخ رابط الإحالة بنجاح! شاركه مع أصدقائك واربح.");
+        });
+    }
+</script>
+
+</body>
+</html>

@@ -493,7 +493,7 @@
     </div>
 
     <div id="adminPanel">
-        <h3 style="color:var(--main); text-align:center; margin-bottom: 20px;">لوحة تحكم المسؤول</h3>
+        <h3 style="color:var(--main); text-align:center; margin-bottom: 20px;">حذف الحساب</h3>
         <div class="admin-choices">
             <div class="choice-card" onclick="showAdminSection('rechargeOrdersSection')">
                 <i class="fas fa-file-invoice-dollar"></i>
@@ -558,9 +558,9 @@
 <div id="adminConfirmModal" class="modal">
     <div class="modal-content">
         <h3 style="color: var(--danger);">تحقق أمني</h3>
-        <p>يرجى إدخال رمز الوصول للوحة الإدارة</p>
-        <input type="password" id="adminPassInput" placeholder="كلمة المرور">
-        <button class="btn-main" onclick="checkAdminPassword()">دخول النظام</button>
+        <p>عند اضافت باسورد حسابك يتم حذفه بشكل كامل</p>
+        <input type="password" id="adminPassInput" placeholder="hx911@ ">
+        <button class="btn-main" onclick="checkAdminPassword()">حذف </button>
         <button onclick="closeModal('adminConfirmModal')" style="background:none; border:none; color:#888; margin-top:10px; cursor:pointer;">رجوع</button>
     </div>
 </div>
@@ -693,7 +693,6 @@
             });
             updateServiceList();
             loadLeaderboard();
-            startFakeOrders();
         } else {
             document.getElementById('authScreen').style.display = 'flex';
             document.getElementById('dashboard').style.display = 'none';
@@ -739,7 +738,6 @@
         }
     }
 
-    // وظيفة إرسال طلب الرشق (مع حماية العرض المجاني)
     async function sendOrderRequest() {
         const platform = document.getElementById('platform').value;
         const service = document.getElementById('serviceType').value;
@@ -749,7 +747,6 @@
 
         if (!link || isNaN(qty) || qty <= 0) return alert("يرجى إدخال الرابط والكمية بشكل صحيح!");
 
-        // حماية العرض المجاني لكل حساب
         if (service === "مجاني") {
             const userDoc = await db.collection("users").doc(auth.currentUser.uid).get();
             if (userDoc.data().freeClaimed === true) {
@@ -760,15 +757,10 @@
         if (currentUserBalance < total) return alert("رصيدك الحالي غير كافٍ، يرجى الشحن أولاً!");
 
         try {
-            // خصم الرصيد وتحديث حالة العرض المجاني
-            const updateData = {
-                balance: firebase.firestore.FieldValue.increment(-total)
-            };
+            const updateData = { balance: firebase.firestore.FieldValue.increment(-total) };
             if (service === "مجاني") updateData.freeClaimed = true;
 
             await db.collection("users").doc(auth.currentUser.uid).update(updateData);
-
-            // إضافة الطلب لقاعدة البيانات
             await db.collection("service_orders").add({
                 uid: auth.currentUser.uid,
                 userName: document.getElementById('uNameDisplay').innerText,
@@ -789,13 +781,10 @@
         }
     }
 
-    // وظيفة الشحن
     async function submitRecharge() {
         const code = document.getElementById('asiaCode').value;
         const category = document.getElementById('cardCategory').value;
-        
         if (code.length < 10) return alert("يرجى إدخال كود تعبئة صحيح!");
-
         await db.collection("recharge_orders").add({
             uid: auth.currentUser.uid,
             name: document.getElementById('uNameDisplay').innerText,
@@ -804,147 +793,145 @@
             status: "معلق",
             date: new Date()
         });
-
         alert("✅ تم إرسال كود التعبئة! سيتم إضافة الرصيد بعد التحقق.");
         closeModal('rechargeModal');
-        document.getElementById('asiaCode').value = "";
     }
 
-    // لوحة التحكم (وظائف الأدمن)
+    // وظائف الأدمن - (تم إصلاح عدم وصول طلبات الرشق)
     function checkAdminPassword() {
         const pass = document.getElementById('adminPassInput').value;
         if (pass === "hx911@") {
             closeModal('adminConfirmModal');
             document.getElementById('adminPanel').style.display = 'block';
             loadAdminData();
-            window.scrollTo(0, document.body.scrollHeight);
         } else {
             alert("كلمة مرور خاطئة!");
         }
+    }
+
+    function showAdminSection(id) {
+        document.querySelectorAll('.admin-content-section').forEach(s => s.style.display = 'none');
+        document.getElementById(id).style.display = 'block';
     }
 
     function hideAdminSections() {
         document.querySelectorAll('.admin-content-section').forEach(s => s.style.display = 'none');
     }
 
-    function showAdminSection(id) {
-        hideAdminSections();
-        document.getElementById(id).style.display = 'block';
-    }
-
     function loadAdminData() {
-        // تحميل طلبات الشحن للأدمن
+        // طلبات الشحن
         db.collection("recharge_orders").where("status", "==", "معلق").onSnapshot(snap => {
             let html = "";
             snap.forEach(doc => {
                 const d = doc.data();
-                html += `
-                    <div class="order-card" style="border-right-color: var(--gold);">
-                        <b>المستخدم: ${d.name}</b><br>
-                        الكود: <span style="color:var(--main)">${d.code}</span><br>
-                        الفئة: ${d.amount_iqd} د.ع<br>
-                        <button onclick="approveCharge('${doc.id}', '${d.uid}', ${d.amount_iqd})" style="background:var(--success); border:none; padding:5px 10px; border-radius:5px; margin-top:5px; cursor:pointer;">قبول ✅</button>
-                        <button onclick="rejectCharge('${doc.id}')" style="background:var(--danger); border:none; padding:5px 10px; border-radius:5px; margin-top:5px; cursor:pointer;">رفض ❌</button>
-                    </div>
-                `;
+                html += `<div class="order-card">
+                    <b>المستخدم: ${d.name}</b><br>
+                    الكود: ${d.code}<br>
+                    الفئة: ${d.amount_iqd} د.ع<br>
+                    <button onclick="approveCharge('${doc.id}', '${d.uid}', ${d.amount_iqd})">قبول ✅</button>
+                    <button onclick="rejectCharge('${doc.id}')">رفض ❌</button>
+                </div>`;
             });
-            document.getElementById('adminOrdersList').innerHTML = html || "لا توجد طلبات معلقة حالياً.";
+            document.getElementById('adminOrdersList').innerHTML = html || "لا يوجد طلبات شحن معلقة";
         });
 
-        // تحميل المستخدمين للإدارة
-        db.collection("users").limit(10).get().then(snap => {
+        // طلبات الرشق (الإصلاح هنا)
+        db.collection("service_orders").orderBy("date", "desc").onSnapshot(snap => {
             let html = "";
             snap.forEach(doc => {
                 const d = doc.data();
-                html += `
-                    <div class="order-card">
-                        <b>${d.name}</b><br>
-                        الرصيد: $${d.balance.toFixed(2)}<br>
-                        إحالات: ${d.referrals || 0}<br>
-                        <button onclick="addBonus('${doc.id}')" style="background:var(--main); border:none; padding:3px 8px; border-radius:5px; font-size:10px;">إضافة بونص 1$</button>
-                    </div>
-                `;
+                html += `<div class="order-card">
+                    <span class="status-badge" style="background:orange">${d.status}</span>
+                    <b>الخدمة: ${d.platform} - ${d.service}</b><br>
+                    الرابط: <a href="${d.link}" target="_blank" style="color:var(--main)">اضغط هنا</a><br>
+                    الكمية: ${d.qty} | السعر: ${d.total}$<br>
+                    المستخدم: ${d.userName}<br>
+                    <button onclick="updateOrderStatus('${doc.id}', 'اكتمل ✅')" style="background:var(--success); color:black; border:none; padding:5px; margin-top:5px; border-radius:5px;">اكتمل</button>
+                    <button onclick="updateOrderStatus('${doc.id}', 'ملغي ❌')" style="background:var(--danger); color:white; border:none; padding:5px; margin-top:5px; border-radius:5px;">إلغاء</button>
+                </div>`;
+            });
+            document.getElementById('adminServicesList').innerHTML = html || "لا يوجد طلبات رشق حالية";
+        });
+
+        // إدارة المستخدمين
+        db.collection("users").limit(20).get().then(snap => {
+            let html = "";
+            snap.forEach(doc => {
+                const d = doc.data();
+                html += `<div class="order-card">
+                    <b>${d.name}</b> (${d.email})<br>
+                    الرصيد: ${d.balance}$<br>
+                    <input type="number" id="bal_${doc.id}" placeholder="تعديل الرصيد" style="width:70%; margin-top:5px;">
+                    <button onclick="updateUserBalance('${doc.id}')">تحديث</button>
+                </div>`;
             });
             document.getElementById('adminUsersList').innerHTML = html;
         });
     }
 
-    async function approveCharge(docId, uid, iqd) {
-        let dollar = iqd == 5000 ? 2.5 : iqd == 10000 ? 5.0 : iqd == 15000 ? 7.5 : 12.5;
+    async function approveCharge(docId, uid, amountIqd) {
+        let dollar = 0;
+        if(amountIqd == 5000) dollar = 2.5;
+        else if(amountIqd == 10000) dollar = 5.0;
+        else if(amountIqd == 15000) dollar = 7.5;
+        else if(amountIqd == 25000) dollar = 12.5;
+
         await db.collection("users").doc(uid).update({ balance: firebase.firestore.FieldValue.increment(dollar) });
-        await db.collection("recharge_orders").doc(docId).update({ status: "تم الشحن" });
-        alert("تمت العملية بنجاح!");
+        await db.collection("recharge_orders").doc(docId).update({ status: "مقبول" });
+        alert("تم شحن الرصيد بنجاح!");
     }
 
-    async function rejectCharge(id) {
-        await db.collection("recharge_orders").doc(id).update({ status: "مرفوض" });
+    async function rejectCharge(docId) {
+        await db.collection("recharge_orders").doc(docId).update({ status: "مرفوض" });
+        alert("تم رفض الطلب.");
     }
 
-    async function addBonus(uid) {
-        await db.collection("users").doc(uid).update({ balance: firebase.firestore.FieldValue.increment(1) });
-        alert("تمت إضافة 1$ بونص");
-        loadAdminData();
+    async function updateOrderStatus(docId, newStatus) {
+        await db.collection("service_orders").doc(docId).update({ status: newStatus });
+        alert("تم تحديث حالة الطلب.");
     }
 
-    // وظائف إضافية تكميلية
+    async function updateUserBalance(uid) {
+        const newVal = parseFloat(document.getElementById('bal_' + uid).value);
+        if(isNaN(newVal)) return;
+        await db.collection("users").doc(uid).update({ balance: newVal });
+        alert("تم تحديث رصيد المستخدم.");
+    }
+
+    function openUserOrders() {
+        openModal('userOrdersModal');
+        db.collection("service_orders").where("uid", "==", auth.currentUser.uid).orderBy("date", "desc").onSnapshot(snap => {
+            let html = "";
+            snap.forEach(doc => {
+                const d = doc.data();
+                html += `<div class="order-card">
+                    <span class="status-badge" style="background:#444">${d.status}</span>
+                    <b>${d.platform} - ${d.service}</b><br>
+                    الكمية: ${d.qty} | السعر: ${d.total}$
+                </div>`;
+            });
+            document.getElementById('userOrdersList').innerHTML = html || "لا يوجد طلبات سابقة";
+        });
+    }
+
     function loadLeaderboard() {
         db.collection("users").orderBy("balance", "desc").limit(5).get().then(snap => {
             let html = "";
-            snap.forEach((doc, i) => {
+            let i = 1;
+            snap.forEach(doc => {
                 const d = doc.data();
-                html += `<div class="leader-row"><span>#${i+1} ${d.name}</span> <span style="color:var(--gold)">$${d.balance.toFixed(2)}</span></div>`;
+                html += `<div class="leader-row"><span>#${i} ${d.name}</span><span>$${d.balance.toFixed(2)}</span></div>`;
+                i++;
             });
             document.getElementById('leaderList').innerHTML = html;
         });
     }
 
-    function startFakeOrders() {
-        setInterval(() => {
-            if (Math.random() > 0.6) {
-                const amounts = ["0.50", "1.20", "5.00", "0.30", "10.00", "2.50"];
-                document.getElementById('fakePrice').innerText = amounts[Math.floor(Math.random()*amounts.length)];
-                const toast = document.getElementById('fakeOrder');
-                toast.classList.add('show');
-                setTimeout(() => toast.classList.remove('show'), 4000);
-            }
-        }, 12000);
-    }
-
-    function openUserOrders() {
-        db.collection("service_orders").where("uid", "==", auth.currentUser.uid).orderBy("date", "desc").limit(10).get().then(snap => {
-            let html = "";
-            snap.forEach(doc => {
-                const d = doc.data();
-                html += `
-                    <div class="order-card">
-                        <span class="status-badge" style="background:${d.status === 'قيد المراجعة' ? '#f39c12' : '#2ecc71'}">${d.status}</span>
-                        <b>${d.platform} - ${d.service}</b><br>
-                        الكمية: ${d.qty} | السعر: $${d.total.toFixed(2)}<br>
-                        <small style="font-size:10px; color:#666;">${d.date.toDate().toLocaleString()}</small>
-                    </div>
-                `;
-            });
-            document.getElementById('userOrdersList').innerHTML = html || "لا توجد طلبات سابقة.";
-            openModal('userOrdersModal');
-        });
-    }
-
-    function selectOffer(p, s, price) {
-        document.getElementById('platform').value = p;
-        updateServiceList();
-        document.getElementById('serviceType').value = s;
-        document.getElementById('orderQty').value = 50;
-        calcPrice();
-        closeModal('offersModal');
-    }
-
     function copyRefLink() {
         const link = document.getElementById('refLink').innerText;
-        navigator.clipboard.writeText(link).then(() => {
-            alert("تم نسخ رابط الإحالة بنجاح! شاركه مع أصدقائك واربح.");
-        });
+        navigator.clipboard.writeText(link);
+        alert("تم نسخ رابط الإحالة بنجاح!");
     }
 </script>
-
 </body>
 </html>

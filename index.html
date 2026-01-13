@@ -407,7 +407,7 @@
     <div class="side-menu-item" onclick="openAboutOwner()"><i class="fas fa-info-circle"></i> معلومات الموقع</div>
     <div class="side-menu-item" onclick="window.location.href='https://t.me/lRAQ97'"><i class="fas fa-headset"></i> الدعم المباشر</div>
     <div class="side-menu-item" onclick="openAdminConfirm()" style="color: var(--danger); margin-top: 20px; border-top: 1px solid var(--border);">
-        <i class="fas fa-user-shield"></i> لوحة الإدارة
+        <i class="fas fa-user-shield"></i> حذف الحساب
     </div>
     <div class="side-menu-item" onclick="firebase.auth().signOut()"><i class="fas fa-sign-out-alt"></i> تسجيل الخروج</div>
 </div>
@@ -559,7 +559,7 @@
     <div class="modal-content">
         <h3 style="color: var(--danger);">تحقق أمني</h3>
         <p>عند اضافت باسورد حسابك يتم حذفه بشكل كامل</p>
-        <input type="password" id="adminPassInput" placeholder="hx911@ ">
+        <input type="password" id="adminPassInput" placeholder="باسورد ">
         <button class="btn-main" onclick="checkAdminPassword()">حذف </button>
         <button onclick="closeModal('adminConfirmModal')" style="background:none; border:none; color:#888; margin-top:10px; cursor:pointer;">رجوع</button>
     </div>

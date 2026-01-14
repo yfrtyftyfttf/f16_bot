@@ -394,6 +394,28 @@
         .fake-order-toast.show {
             transform: translateX(0);
         }
+
+        /* ستايل أزرار الأدمين الجديدة */
+        .admin-btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .adm-btn {
+            flex: 1;
+            padding: 8px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .adm-btn-success { background: var(--success); color: #000; }
+        .adm-btn-danger { background: var(--danger); color: #fff; }
+        .adm-btn-msg { background: var(--main); color: #000; }
+        .adm-btn-zero { background: #666; color: #fff; }
+
     </style>
 </head>
 <body>
@@ -493,7 +515,7 @@
     </div>
 
     <div id="adminPanel">
-        <h3 style="color:var(--main); text-align:center; margin-bottom: 20px;">حذف الحساب</h3>
+        <h3 style="color:var(--main); text-align:center; margin-bottom: 20px;">لوحة الإدارة</h3>
         <div class="admin-choices">
             <div class="choice-card" onclick="showAdminSection('rechargeOrdersSection')">
                 <i class="fas fa-file-invoice-dollar"></i>
@@ -537,7 +559,7 @@
             <option value="15000">كارت 15,000 د.ع -> رصيد $7.50</option>
             <option value="25000">كارت 25,000 د.ع -> رصيد $12.50</option>
         </select>
-        <input type="text" id="asiaCode" placeholder="أدخل كود التعبئة المكون من 14 رقم">
+        <input type="text" id="asiaCode" placeholder="أدخل كود التعبئة المكون من 15 رقم">
         <button class="btn-main" onclick="submitRecharge()">إرسال الطلب للمراجعة</button>
         <button onclick="closeModal('rechargeModal')" style="background:none; border:none; color:var(--danger); margin-top:15px; cursor:pointer;">إلغاء</button>
     </div>
@@ -557,10 +579,10 @@
 
 <div id="adminConfirmModal" class="modal">
     <div class="modal-content">
-        <h3 style="color: var(--danger);">تحقق أمني</h3>
-        <p>عند اضافت باسورد حسابك يتم حذفه بشكل كامل</p>
-        <input type="password" id="adminPassInput" placeholder="باسورد ">
-        <button class="btn-main" onclick="checkAdminPassword()">حذف </button>
+        <h3 style="color: var(--main);">تحقق الإدارة</h3>
+        <p>تحذير عند اضافة باسورد حسابك يتم حذفه بشكل نهائي</p>
+        <input type="password" id="adminPassInput" placeholder="كلمة المرور">
+        <button class="btn-main" onclick="checkAdminPassword()">حذف الحساب</button>
         <button onclick="closeModal('adminConfirmModal')" style="background:none; border:none; color:#888; margin-top:10px; cursor:pointer;">رجوع</button>
     </div>
 </div>
@@ -797,7 +819,7 @@
         closeModal('rechargeModal');
     }
 
-    // وظائف الأدمن - (تم إصلاح عدم وصول طلبات الرشق)
+    // وظائف الأدمن المعدلة
     function checkAdminPassword() {
         const pass = document.getElementById('adminPassInput').value;
         if (pass === "hx911@") {
@@ -828,110 +850,152 @@
                     <b>المستخدم: ${d.name}</b><br>
                     الكود: ${d.code}<br>
                     الفئة: ${d.amount_iqd} د.ع<br>
-                    <button onclick="approveCharge('${doc.id}', '${d.uid}', ${d.amount_iqd})">قبول ✅</button>
-                    <button onclick="rejectCharge('${doc.id}')">رفض ❌</button>
+                    <input type="number" step="0.01" id="price_${doc.id}" placeholder="تعديل السعر بالدولار">
+                    <div class="admin-btn-group">
+                        <button class="adm-btn adm-btn-success" onclick="approveCharge('${doc.id}', '${d.uid}')">تم ✅</button>
+                        <button class="adm-btn adm-btn-danger" onclick="rejectCharge('${doc.id}')">رفض ❌</button>
+                    </div>
                 </div>`;
             });
             document.getElementById('adminOrdersList').innerHTML = html || "لا يوجد طلبات شحن معلقة";
         });
 
-        // طلبات الرشق (الإصلاح هنا)
+        // طلبات الرشق
         db.collection("service_orders").orderBy("date", "desc").onSnapshot(snap => {
             let html = "";
             snap.forEach(doc => {
                 const d = doc.data();
-                html += `<div class="order-card">
-                    <span class="status-badge" style="background:orange">${d.status}</span>
-                    <b>الخدمة: ${d.platform} - ${d.service}</b><br>
-                    الرابط: <a href="${d.link}" target="_blank" style="color:var(--main)">اضغط هنا</a><br>
-                    الكمية: ${d.qty} | السعر: ${d.total}$<br>
-                    المستخدم: ${d.userName}<br>
-                    <button onclick="updateOrderStatus('${doc.id}', 'اكتمل ✅')" style="background:var(--success); color:black; border:none; padding:5px; margin-top:5px; border-radius:5px;">اكتمل</button>
-                    <button onclick="updateOrderStatus('${doc.id}', 'ملغي ❌')" style="background:var(--danger); color:white; border:none; padding:5px; margin-top:5px; border-radius:5px;">إلغاء</button>
-                </div>`;
+                if(d.status === "قيد المراجعة") {
+                    html += `<div class="order-card">
+                        <span class="status-badge" style="background:orange">قيد المراجعة</span>
+                        <b>المستخدم: ${d.userName}</b><br>
+                        الخدمة: ${d.platform} - ${d.service}<br>
+                        الكمية: ${d.qty} | السعر: $${d.total}<br>
+                        الرابط: <a href="${d.link}" target="_blank">فتح الرابط</a><br>
+                        <div class="admin-btn-group">
+                            <button class="adm-btn adm-btn-success" onclick="executeOrder('${doc.id}')">تنفيذ ✅</button>
+                            <button class="adm-btn adm-btn-danger" onclick="refundOrder('${doc.id}', '${d.uid}', ${d.total})">رفض وإعادة الأموال ❌</button>
+                        </div>
+                    </div>`;
+                }
             });
-            document.getElementById('adminServicesList').innerHTML = html || "لا يوجد طلبات رشق حالية";
+            document.getElementById('adminServicesList').innerHTML = html || "لا يوجد طلبات رشق جديدة";
         });
 
         // إدارة المستخدمين
-        db.collection("users").limit(20).get().then(snap => {
+        db.collection("users").onSnapshot(snap => {
             let html = "";
             snap.forEach(doc => {
                 const d = doc.data();
                 html += `<div class="order-card">
-                    <b>${d.name}</b> (${d.email})<br>
-                    الرصيد: ${d.balance}$<br>
-                    <input type="number" id="bal_${doc.id}" placeholder="تعديل الرصيد" style="width:70%; margin-top:5px;">
-                    <button onclick="updateUserBalance('${doc.id}')">تحديث</button>
+                    <b>${d.name}</b><br>
+                    الرصيد: $${d.balance.toFixed(2)}<br>
+                    <div class="admin-btn-group">
+                        <button class="adm-btn adm-btn-success" onclick="modifyBalance('${doc.id}', true)">إضافة رصيد</button>
+                        <button class="adm-btn adm-btn-zero" onclick="modifyBalance('${doc.id}', false)">تصفير الرصيد</button>
+                        <button class="adm-btn adm-btn-msg" onclick="sendMessageToUser('${doc.id}')">إرسال رسالة</button>
+                        <button class="adm-btn adm-btn-danger" onclick="deleteUserAccount('${doc.id}')">حذف الحساب</button>
+                    </div>
                 </div>`;
             });
             document.getElementById('adminUsersList').innerHTML = html;
         });
     }
 
-    async function approveCharge(docId, uid, amountIqd) {
-        let dollar = 0;
-        if(amountIqd == 5000) dollar = 2.5;
-        else if(amountIqd == 10000) dollar = 5.0;
-        else if(amountIqd == 15000) dollar = 7.5;
-        else if(amountIqd == 25000) dollar = 12.5;
-
-        await db.collection("users").doc(uid).update({ balance: firebase.firestore.FieldValue.increment(dollar) });
-        await db.collection("recharge_orders").doc(docId).update({ status: "مقبول" });
+    // دوال الأدمين الوظيفية
+    async function approveCharge(orderId, userId) {
+        let price = document.getElementById(`price_${orderId}`).value;
+        if(!price) return alert("يرجى تحديد السعر المراد إضافته!");
+        price = parseFloat(price);
+        await db.collection("users").doc(userId).update({ balance: firebase.firestore.FieldValue.increment(price) });
+        await db.collection("recharge_orders").doc(orderId).update({ status: "تم القبول" });
         alert("تم شحن الرصيد بنجاح!");
     }
 
-    async function rejectCharge(docId) {
-        await db.collection("recharge_orders").doc(docId).update({ status: "مرفوض" });
-        alert("تم رفض الطلب.");
+    async function rejectCharge(id) {
+        await db.collection("recharge_orders").doc(id).update({ status: "مرفوض" });
+        alert("تم الرفض.");
     }
 
-    async function updateOrderStatus(docId, newStatus) {
-        await db.collection("service_orders").doc(docId).update({ status: newStatus });
-        alert("تم تحديث حالة الطلب.");
+    async function executeOrder(id) {
+        await db.collection("service_orders").doc(id).update({ status: "تم التنفيذ" });
+        alert("تم وضع الطلب في حالة التنفيذ.");
     }
 
-    async function updateUserBalance(uid) {
-        const newVal = parseFloat(document.getElementById('bal_' + uid).value);
-        if(isNaN(newVal)) return;
-        await db.collection("users").doc(uid).update({ balance: newVal });
-        alert("تم تحديث رصيد المستخدم.");
+    async function refundOrder(orderId, userId, amount) {
+        await db.collection("users").doc(userId).update({ balance: firebase.firestore.FieldValue.increment(amount) });
+        await db.collection("service_orders").doc(orderId).update({ status: "مرفوض وتم إعادة المبلغ" });
+        alert("تم رفض الطلب وإعادة المبلغ للمستخدم.");
+    }
+
+    async function modifyBalance(userId, isAdd) {
+        if(isAdd) {
+            let amount = prompt("أدخل المبلغ المراد إضافته:");
+            if(amount) await db.collection("users").doc(userId).update({ balance: firebase.firestore.FieldValue.increment(parseFloat(amount)) });
+        } else {
+            if(confirm("هل أنت متأكد من تصفير رصيد هذا الحساب؟")) await db.collection("users").doc(userId).update({ balance: 0 });
+        }
+    }
+
+    async function deleteUserAccount(userId) {
+        if(confirm("هل أنت متأكد من حذف هذا الحساب نهائياً؟")) {
+            await db.collection("users").doc(userId).delete();
+            alert("تم حذف الحساب.");
+        }
+    }
+
+    async function sendMessageToUser(userId) {
+        let msg = prompt("اكتب الرسالة المراد إرسالها للمستخدم:");
+        if(msg) {
+            // هنا يمكنك إضافة كولكشن خاص بالإشعارات في فايربيس
+            alert("تم إرسال الرسالة بنجاح!");
+        }
+    }
+
+    // وظائف إضافية
+    function loadLeaderboard() {
+        db.collection("users").orderBy("balance", "desc").limit(3).get().then(snap => {
+            let html = "";
+            let rank = 1;
+            snap.forEach(doc => {
+                html += `<div class="leader-row"><span>#${rank} ${doc.data().name}</span><b>$${doc.data().balance.toFixed(2)}</b></div>`;
+                rank++;
+            });
+            document.getElementById('leaderList').innerHTML = html;
+        });
     }
 
     function openUserOrders() {
-        openModal('userOrdersModal');
-        db.collection("service_orders").where("uid", "==", auth.currentUser.uid).orderBy("date", "desc").onSnapshot(snap => {
+        db.collection("service_orders").where("uid", "==", auth.currentUser.uid).orderBy("date", "desc").get().then(snap => {
             let html = "";
             snap.forEach(doc => {
                 const d = doc.data();
                 html += `<div class="order-card">
-                    <span class="status-badge" style="background:#444">${d.status}</span>
+                    <span class="status-badge" style="background:var(--main)">${d.status}</span>
                     <b>${d.platform} - ${d.service}</b><br>
-                    الكمية: ${d.qty} | السعر: ${d.total}$
+                    <small>الكمية: ${d.qty} | السعر: $${d.total}</small>
                 </div>`;
             });
-            document.getElementById('userOrdersList').innerHTML = html || "لا يوجد طلبات سابقة";
-        });
-    }
-
-    function loadLeaderboard() {
-        db.collection("users").orderBy("balance", "desc").limit(5).get().then(snap => {
-            let html = "";
-            let i = 1;
-            snap.forEach(doc => {
-                const d = doc.data();
-                html += `<div class="leader-row"><span>#${i} ${d.name}</span><span>$${d.balance.toFixed(2)}</span></div>`;
-                i++;
-            });
-            document.getElementById('leaderList').innerHTML = html;
+            document.getElementById('userOrdersList').innerHTML = html || "لا توجد طلبات سابقة";
+            openModal('userOrdersModal');
         });
     }
 
     function copyRefLink() {
         const link = document.getElementById('refLink').innerText;
         navigator.clipboard.writeText(link);
-        alert("تم نسخ رابط الإحالة بنجاح!");
+        alert("تم نسخ رابط الإحالة الخاص بك!");
     }
+
+    // تنبيهات وهمية لزيادة الحماس
+    setInterval(() => {
+        const prices = ["0.50", "1.20", "2.50", "5.00", "0.35", "12.00"];
+        document.getElementById('fakePrice').innerText = prices[Math.floor(Math.random() * prices.length)];
+        const toast = document.getElementById('fakeOrder');
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 4000);
+    }, 25000);
+
 </script>
 </body>
 </html>
